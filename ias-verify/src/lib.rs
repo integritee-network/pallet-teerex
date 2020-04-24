@@ -25,6 +25,7 @@ use chrono::prelude::*;
 //use serde_json::Value;
 //use sgx_types::*;
 //use sgx_ucrypto::SgxEccHandle;
+use frame_support::{runtime_print, debug};
 
 //use super::{SgxReport, SgxStatus};
 use codec::{Encode, Decode};
@@ -73,8 +74,8 @@ pub struct SgxQuote {
     xeid: u32,           /* 12  */
     basename: [u8; 32],   /* 16  */
     report_body: SgxReportBody, /* 48  */
-    signature_len: u32,    /* 432 */
-    signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
+    //signature_len: u32,    /* 432 */
+    //signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
 }
 
 #[derive(Encode, Decode, Copy, Clone, PartialEq)]
@@ -139,7 +140,8 @@ pub fn verify_ias_report(
     xt_signer_attn: &[u32],
     xt_signer: &[u8],
 ) -> Result<Vec<u8>, &'static str> {
-    print_utf8(b"verifyRA: start verifying RA cert");
+    #[cfg(test)]
+    println!("verifyRA: start verifying RA cert");
     // Before we reach here, the runtime already verifed the extrinsic is properly signed by the extrinsic sender
     // Search for Public Key prime256v1 OID
     let prime256v1_oid = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
@@ -165,7 +167,8 @@ pub fn verify_ias_report(
     offset += 1;
     let pub_k = safe_indexing(cert_der, offset + 2, offset + len)?.to_vec(); // skip "00 04"
 
-    print_utf8(b"verifyRA public key read");
+    #[cfg(test)]
+    println!("verifyRA public key: {:?}", pub_k);
 
     // Search for Netscape Comment OID
     let ns_cmt_oid = &[
@@ -179,8 +182,9 @@ pub fn verify_ias_report(
         _ => return Err("Certificate to check is empty"),
     };
     offset += 12; // 11 + TAG (0x04)
-
-    print_utf8(b"netscape");
+    
+    #[cfg(test)]
+    println!("netscape");
     // Obtain Netscape Comment length
     let mut len = safe_indexing_one(cert_der, offset)? as usize;
 
@@ -213,7 +217,8 @@ pub fn verify_ias_report(
         Err(_) => return Err("Bad DER"),
     };
 
-    print_utf8(b"intel cert");
+    #[cfg(test)]
+    println!("intel cert");
     // Verify if the signing cert is issued by Intel CA
     let mut ias_ca_stripped = IAS_REPORT_CA.to_vec();
     ias_ca_stripped.retain(|&x| x != 0x0d && x != 0x0a);
@@ -226,7 +231,8 @@ pub fn verify_ias_report(
         Err(_) => return Err("Decoding Error"),
     };
 
-    print_utf8(b"CA");
+    #[cfg(test)]
+    println!("CA");
 /*    let mut ca_reader = BufReader::new(&IAS_REPORT_CA[..]);
 
     let mut root_store = rustls::RootCertStore::empty();
@@ -293,7 +299,9 @@ fn verify_attn_report(
         }
         _ => return Err("Failed to fetch timestamp from attestation report"),
     };
-    print_utf8(b"verifyRA attestation timestamp read");
+    
+    #[cfg(test)]
+    println!("verifyRA attestation timestamp [unix epoch]: {}", ra_timestamp);
 
     // get quote status (mandatory field)
     let ra_status = match &attn_report["isvEnclaveQuoteStatus"] {
@@ -308,26 +316,31 @@ fn verify_attn_report(
         }
         _ => return Err("Failed to fetch isvEnclaveQuoteStatus from attestation report"),
     };
-    print_utf8(b"verifyRA attestation status read");
-
+    
+    #[cfg(test)]
+    println!("verifyRA attestation status is: {:?}", ra_status);
     // parse quote body
     if let Value::String(quote_raw) = &attn_report["isvEnclaveQuoteBody"] {
         let quote = match base64::decode(&quote_raw) {
             Ok(q) => q,
             Err(_) => return Err("Quote Decoding Error"),
         };
-        print_utf8(b"Quote read");
+        #[cfg(test)]
+        println!("Quote read. len={}", quote.len());
         // TODO: lack security check here
         let sgx_quote: SgxQuote = match Decode::decode(&mut &quote[..]) {
             Ok(q) => q,
             Err(_) => return Err("could not decode quote")
         };
         // Borrow of packed field is unsafe in future Rust releases
-        // ATTENTION
-        // DO SECURITY CHECK ON DEMAND
-        // DO SECURITY CHECK ON DEMAND
-        // DO SECURITY CHECK ON DEMAND
-        print_utf8(b"sgx quote parsed");
+        #[cfg(test)]
+        {
+            println!("sgx quote version = {}", sgx_quote.version);
+            println!("sgx quote signature type = {}", sgx_quote.sign_type);
+            //println!("sgx quote report_data = {:?}", sgx_quote.report_body.report_data.d[..32]);
+            println!("sgx quote mr_enclave = {:?}", sgx_quote.report_body.mr_enclave);
+            println!("sgx quote mr_signer = {:?}", sgx_quote.report_body.mr_signer);
+        }
 
         if sgx_quote.report_body.report_data.d.to_vec() == pub_k.to_vec() {
             print_utf8(b"Remote attestation of enclave successful!");
@@ -421,9 +434,9 @@ mod tests {
     const CERT_TOO_SHORT2: &[u8] = b"0\x82\x0c\x8c0";
 
     #[test]
-    fn verify_mra_cert_should_work() {
+    fn verify_ias_report_should_work() {
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        let report = verify_mra_cert(TEST1_CERT, &signer_attn, TEST1_SIGNER_PUB);
+        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST1_SIGNER_PUB);
 
         assert!(report.is_ok());
         let report: SgxReport = Decode::decode(&mut &report.unwrap()[..]).unwrap();
@@ -433,14 +446,14 @@ mod tests {
     }
 
     #[test]
-    fn verify_mra_cert_wrong_signer_should_fail() {
+    fn verify_ias_report_wrong_signer_should_fail() {
         // wrong ed25519, good ephemeral ecdsa
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        let report = verify_mra_cert(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
+        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
         assert!(report.is_err());
         // wrong ed25519 and ephemeral ecdsa, but attn valid for that ed25519
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST2_SIGNER_ATTN).unwrap();
-        let report = verify_mra_cert(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
+        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
         assert!(report.is_err());
     }
 
@@ -448,35 +461,35 @@ mod tests {
     fn verify_zero_length_cert_returns_err() {
         // CERT empty, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_mra_cert(&Vec::new()[..], &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(&Vec::new()[..], &signer_attn, TEST1_SIGNER_PUB).is_err())
     }
 
     #[test]
     fn verify_wrong_cert_is_err() {
         // CERT wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_mra_cert(CERT_WRONG_PLATFORM_BLOB, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_WRONG_PLATFORM_BLOB, &signer_attn, TEST1_SIGNER_PUB).is_err())
     }
 
     #[test]
     fn verify_wrong_fake_enclave_quote_is_err() {
         // quote wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_mra_cert(CERT_FAKE_QUOTE_STATUS, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_FAKE_QUOTE_STATUS, &signer_attn, TEST1_SIGNER_PUB).is_err())
     }
 
     #[test]
     fn verify_wrong_sig_is_err() {
         // sig wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_mra_cert(CERT_WRONG_SIG, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_WRONG_SIG, &signer_attn, TEST1_SIGNER_PUB).is_err())
     }
 
     #[test]
     fn verify_short_cert_is_err() {
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_mra_cert(CERT_TOO_SHORT1, &signer_attn, TEST1_SIGNER_PUB).is_err());
-        assert!(verify_mra_cert(CERT_TOO_SHORT2, &signer_attn, TEST1_SIGNER_PUB).is_err());
+        assert!(verify_ias_report(CERT_TOO_SHORT1, &signer_attn, TEST1_SIGNER_PUB).is_err());
+        assert!(verify_ias_report(CERT_TOO_SHORT2, &signer_attn, TEST1_SIGNER_PUB).is_err());
     }
 
     #[test]
