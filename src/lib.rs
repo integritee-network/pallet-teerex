@@ -24,7 +24,7 @@ use sp_io::misc::print_utf8;
 use frame_support::{decl_event, decl_module, decl_storage, decl_error, 
     dispatch::DispatchResult, ensure};
 use frame_system::{self as system, ensure_signed};
-
+use ias_verify::{SgxReport, verify_ias_report};
 pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -49,43 +49,6 @@ pub struct Request {
     pub shard: ShardIdentifier,
     pub cyphertext: Vec<u8>,
 }
-
-#[derive(Encode, Decode, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub enum SgxStatus {
-    Invalid,
-    Ok,
-    GroupOutOfDate,
-    GroupRevoked,
-    ConfigurationNeeded,
-}
-impl Default for SgxStatus {
-    fn default() -> Self {
-        SgxStatus::Invalid
-    }
-}
-
-#[derive(Encode, Decode, Default, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
-pub struct SgxReport {
-    pub mr_enclave: [u8; 32],
-    pub pubkey: [u8; 32],
-    pub status: SgxStatus,
-    pub timestamp: i64,
-}
-
-type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
-static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
-    // &webpki::ECDSA_P256_SHA256,
-    // &webpki::ECDSA_P256_SHA384,
-    // &webpki::ECDSA_P384_SHA256,
-    // &webpki::ECDSA_P384_SHA384,
-    &webpki::RSA_PKCS1_2048_8192_SHA256,
-    &webpki::RSA_PKCS1_2048_8192_SHA384,
-    &webpki::RSA_PKCS1_2048_8192_SHA512,
-    &webpki::RSA_PKCS1_3072_8192_SHA384,
-];
-
 
 decl_event!(
 	pub enum Event<T>
@@ -132,8 +95,8 @@ decl_module! {
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             print_utf8(b"substraTEE_registry: parameter lenght ok");
-            match Self::verify_ra_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
-                Some(rep) => {
+            match verify_ias_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
+                Ok(rep) => {
                     print_utf8(b"substraTEE_registry: host_call successful");
                     let report = SgxReport::decode(&mut &rep[..]).unwrap();
                     let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
@@ -155,7 +118,7 @@ decl_module! {
                     Ok(())
 
                 }
-                None => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
+                Err(_) => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
             }
         }
         // TODO: we can't expect a dead enclave to unregister itself
@@ -262,11 +225,6 @@ impl<T: Trait> Module<T> {
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
 
         Ok(())
-    }
-
-
-    pub fn verify_ra_report(cert_der: &[u8], signer_attn: &[u32], signer: &[u8]) -> Option<Vec<u8>> {
-        None
     }
 }
 

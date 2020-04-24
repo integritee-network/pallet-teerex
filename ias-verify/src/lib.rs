@@ -18,7 +18,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_std::prelude::*;
-use sp_std::ptr;
 use sp_io::misc::print_utf8;
 use chrono::prelude::*;
 //use itertools::Itertools;
@@ -135,7 +134,7 @@ fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
 }
 
 // make sure this function doesn't panic!
-pub fn verify_mra_cert(
+pub fn verify_ias_report(
     cert_der: &[u8],
     xt_signer_attn: &[u32],
     xt_signer: &[u8],
