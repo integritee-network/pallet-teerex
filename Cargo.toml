@@ -7,6 +7,15 @@ edition = "2018"
 
 [dependencies]
 
+[dependencies.webpki]
+git = 'https://github.com/Phala-Network/phala-blockchain.git'
+default_features = false
+
+[dependencies.ring]
+git = 'https://github.com/Phala-Network/phala-blockchain.git'
+default_features = false
+features = ["alloc"]
+
 [dependencies.codec]
 default-features = false
 features = ['derive']
@@ -38,13 +47,6 @@ version = '2.0.0-alpha.6'
 default-features = false
 version = '2.0.0-alpha.6'
 
-# added by SCS
-[dependencies.host_calls]
-default-features = false
-package='substratee-registry-host-calls'
-path = "./host-calls"
-
-# added by SCS
 [dev-dependencies.externalities]
 package = "sp-externalities"
 version = "0.8.0-alpha.6"
@@ -55,5 +57,4 @@ std = [
     'codec/std',
     'frame-support/std',
     'frame-system/std',
-    'host_calls/std',
 ]

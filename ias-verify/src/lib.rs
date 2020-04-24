@@ -30,6 +30,34 @@ use sgx_ucrypto::SgxEccHandle;
 use super::{SgxReport, SgxStatus};
 use codec::Encode;
 
+
+
+#[derive(Encode, Decode, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub enum SgxStatus {
+    Invalid,
+    Ok,
+    GroupOutOfDate,
+    GroupRevoked,
+    ConfigurationNeeded,
+}
+impl Default for SgxStatus {
+    fn default() -> Self {
+        SgxStatus::Invalid
+    }
+}
+
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct SgxReport {
+    pub mr_enclave: [u8; 32],
+    pub pubkey: [u8; 32],
+    pub status: SgxStatus,
+    pub timestamp: i64,
+}
+
+
+
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
 
 static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[

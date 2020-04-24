@@ -17,8 +17,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use host_calls::runtime_interfaces::verify_ra_report;
-use host_calls::SgxReport;
 use sp_core::H256;
 use sp_std::prelude::*;
 use sp_std::str;
@@ -51,6 +49,43 @@ pub struct Request {
     pub shard: ShardIdentifier,
     pub cyphertext: Vec<u8>,
 }
+
+#[derive(Encode, Decode, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub enum SgxStatus {
+    Invalid,
+    Ok,
+    GroupOutOfDate,
+    GroupRevoked,
+    ConfigurationNeeded,
+}
+impl Default for SgxStatus {
+    fn default() -> Self {
+        SgxStatus::Invalid
+    }
+}
+
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct SgxReport {
+    pub mr_enclave: [u8; 32],
+    pub pubkey: [u8; 32],
+    pub status: SgxStatus,
+    pub timestamp: i64,
+}
+
+type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
+static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
+    // &webpki::ECDSA_P256_SHA256,
+    // &webpki::ECDSA_P256_SHA384,
+    // &webpki::ECDSA_P384_SHA256,
+    // &webpki::ECDSA_P384_SHA384,
+    &webpki::RSA_PKCS1_2048_8192_SHA256,
+    &webpki::RSA_PKCS1_2048_8192_SHA384,
+    &webpki::RSA_PKCS1_2048_8192_SHA512,
+    &webpki::RSA_PKCS1_3072_8192_SHA384,
+];
+
 
 decl_event!(
 	pub enum Event<T>
@@ -97,7 +132,7 @@ decl_module! {
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             print_utf8(b"substraTEE_registry: parameter lenght ok");
-            match verify_ra_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
+            match Self::verify_ra_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
                 Some(rep) => {
                     print_utf8(b"substraTEE_registry: host_call successful");
                     let report = SgxReport::decode(&mut &rep[..]).unwrap();
@@ -227,6 +262,11 @@ impl<T: Trait> Module<T> {
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
 
         Ok(())
+    }
+
+
+    pub fn verify_ra_report(cert_der: &[u8], signer_attn: &[u32], signer: &[u8]) -> Option<Vec<u8>> {
+        None
     }
 }
 
