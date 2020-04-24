@@ -8,24 +8,24 @@ use sp_runtime::traits::IdentifyAccount;
 
 // reproduce with "substratee_worker dump_ra"
 const TEST1_CERT: &[u8] =
-	include_bytes!("../test/test_ra_cert_MRSIGNER1_MRENCLAVE1.der");
+	include_bytes!("../ias-verify/test/test_ra_cert_MRSIGNER1_MRENCLAVE1.der");
 const TEST2_CERT: &[u8] =
-	include_bytes!("../test/test_ra_cert_MRSIGNER2_MRENCLAVE2.der");
+	include_bytes!("../ias-verify/test/test_ra_cert_MRSIGNER2_MRENCLAVE2.der");
 const TEST3_CERT: &[u8] =
-	include_bytes!("../test/test_ra_cert_MRSIGNER3_MRENCLAVE2.der");
+	include_bytes!("../ias-verify/test/test_ra_cert_MRSIGNER3_MRENCLAVE2.der");
 const TEST1_SIGNER_ATTN: &[u8] =
-	include_bytes!("../test/test_ra_signer_attn_MRSIGNER1_MRENCLAVE1.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_attn_MRSIGNER1_MRENCLAVE1.bin");
 const TEST2_SIGNER_ATTN: &[u8] =
-	include_bytes!("../test/test_ra_signer_attn_MRSIGNER2_MRENCLAVE2.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_attn_MRSIGNER2_MRENCLAVE2.bin");
 const TEST3_SIGNER_ATTN: &[u8] =
-	include_bytes!("../test/test_ra_signer_attn_MRSIGNER3_MRENCLAVE2.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_attn_MRSIGNER3_MRENCLAVE2.bin");
 // reproduce with "substratee_worker getsignkey"
 const TEST1_SIGNER_PUB: &[u8] =
-	include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER1_MRENCLAVE1.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_pubkey_MRSIGNER1_MRENCLAVE1.bin");
 const TEST2_SIGNER_PUB: &[u8] =
-	include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER2_MRENCLAVE2.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_pubkey_MRSIGNER2_MRENCLAVE2.bin");
 const TEST3_SIGNER_PUB: &[u8] =
-	include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER3_MRENCLAVE2.bin");
+	include_bytes!("../ias-verify/test/test_ra_signer_pubkey_MRSIGNER3_MRENCLAVE2.bin");
 
 // reproduce with "make mrenclave" in worker repo root
 const TEST1_MRENCLAVE: [u8; 32] = [
