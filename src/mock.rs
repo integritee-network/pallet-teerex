@@ -3,6 +3,7 @@
 use crate::{Module, Trait};
 use sp_core::{hashing::blake2_256, sr25519, Blake2Hasher, Pair, Public, H256};
 use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
+use frame_system as system;
 use sp_runtime::{
     traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}, 
     testing::Header, 
@@ -56,7 +57,12 @@ pub type System = system::Module<TestRuntime>;
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<TestRuntime>().unwrap().into()
+    let t = system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap();
+    let mut ext: sp_io::TestExternalities = t.into();
+    ext.execute_with(|| System::set_block_number(1));
+    ext
 }
 
 /// The signature type used by accounts/transactions.

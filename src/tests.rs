@@ -1,7 +1,7 @@
 // Tests to be written here
 use super::*;
 use crate::{Error, mock::*};
-use frame_support::{assert_ok, assert_noop};
+use frame_support::{assert_ok, assert_noop, IterableStorageMap };
 use codec::{Decode, Encode};
 use sp_core::{sr25519, Blake2Hasher, Pair, Public, H256};
 use sp_runtime::traits::IdentifyAccount;
@@ -329,6 +329,7 @@ fn call_worker_works() {
 		let (signer, signer_attn) = get_signer1();
 		assert!(Registry::call_worker(Origin::signed(signer), req.clone()).is_ok());
 		let expected_event = TestEvent::registry(RawEvent::Forwarded(req));
+		println!("events:{:?}", System::events());
 		assert!(System::events().iter().any(|a| a.event == expected_event));
 	})
 }
