@@ -247,13 +247,13 @@ pub fn verify_ias_report(
     let sig_raw = iter.next().unwrap();
     let sig = match base64::decode(&sig_raw) {
         Ok(m) => m,
-        Err(_) => return Err("Decoding Error"),
+        Err(_) => return Err("Signature Decoding Error"),
     };
 
     let sig_cert_raw = iter.next().unwrap();
     let sig_cert_dec = match base64::decode_config(&sig_cert_raw, base64::STANDARD) {
         Ok(c) => c,
-        Err(_) => return Err("Decoding Error"),
+        Err(_) => return Err("Cert Decoding Error"),
     };
     let sig_cert = match webpki::EndEntityCert::from(&sig_cert_dec) {
         Ok(c) => c,
@@ -274,14 +274,6 @@ pub fn verify_ias_report(
         Err(_) => return Err("Decoding Error"),
     };
 
-	let sig_cert: webpki::EndEntityCert = match webpki::EndEntityCert::from(&ias_cert_dec) {
-		Ok(x) => x,
-		Err(_) => return Err("EndEntityCert could not be created")
-    };
-    
-    #[cfg(test)]
-    println!("CA EndEntityCert created");    
-
     let chain: Vec<&[u8]> = Vec::new();
 	let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
 	
@@ -291,12 +283,32 @@ pub fn verify_ias_report(
 		&chain,
 		now_func
 	) {
-		Ok(()) => (),
-		Err(_) => return Err("CA verification failed")
+		Ok(()) => {
+            #[cfg(test)]
+            println!("CA is valid");    
+        },
+		Err(e) => {
+            #[cfg(test)]
+            println!("CA ERROR: {}",e);  
+            //return Err("CA verification failed")
+        }
 	};
-    #[cfg(test)]
-    println!("CA is valid");    
     
+    match sig_cert.verify_signature(
+        &webpki::RSA_PKCS1_2048_8192_SHA256,
+        &attn_report_raw,
+        &sig) 
+    {
+        Ok(()) => {
+            #[cfg(test)]
+            println!("IAS signature is valid");
+        },
+        Err(e) => {
+            #[cfg(test)]
+            println!("RSA Signature ERROR: {}",e);  
+            return Err("bad signature");
+        }
+    }
 
 /*    let mut ca_reader = BufReader::new(&IAS_REPORT_CA[..]);
 
