@@ -312,6 +312,54 @@ fn verify_attn_report(
             "extrinsic signer pubkey has been attested: {:02x}",
             xt_signer.iter().format("")
         );
+
+        // try alternative verification with ring
+        if pub_k.len() != 64 {
+            return Err("wrong size of signer ephemeral public key");
+        }
+        if xt_signer_attn.len() != 16 {
+            return Err("wrong size of signer attestation signature");
+        }
+       
+        // 0x04 stands for uncompressed format
+        // ring uses x,y in big-endian order
+        // SGX uses NID_X9_62_prime256v1 curve https://github.com/intel/linux-sgx/blob/4589daddd58bec7367a6a9de3fe301e6de17671a/sdk/tlibcrypto/sgxssl/sgx_ecc256.cpp#L57
+        // equivalent to NIST P-256 according to https://tools.ietf.org/search/rfc4492#appendix-A
+        // problem now: public key point x,y as derived here is not on the curve.
+        let mut pubkey = vec!(4u8);
+        let mut pub_part = [0u8; 32];
+        pub_part.copy_from_slice(&pub_k[..32]);
+        pub_part.reverse();
+        pubkey.append(&mut pub_part.to_vec());
+        pub_part.copy_from_slice(&pub_k[32..]);
+        pub_part.reverse();
+        pubkey.append(&mut pub_part.to_vec());
+
+        println!("ephemeral ECDSA pubkey {:02x}", pubkey.iter().format(""));
+        
+        let ecdsa_pubkey = ring::signature::UnparsedPublicKey::new(
+            &ring::signature::ECDSA_P256_SHA256_FIXED, 
+            pubkey);
+        let mut signature = xt_signer_attn.encode();
+        signature.remove(0);
+        println!("signature {:02x}", signature.iter().format(""));
+        
+        match ecdsa_pubkey.verify(&xt_signer, &signature) {
+            Ok(()) => {
+                #[cfg(test)]
+                println!("xt_signer ephemeral ECDSA signature is valid");
+            },
+            Err(e) => {
+                #[cfg(test)]
+                println!("ECDSA Signature ERROR: {}",e);  
+                return Err("bad signature");
+            }
+        }        
+
+
+
+
+
         let mut xt_signer_array = [0u8; 32];
         xt_signer_array.copy_from_slice(xt_signer);
         Ok(SgxReport {
