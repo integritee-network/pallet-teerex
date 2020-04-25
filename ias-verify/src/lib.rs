@@ -104,11 +104,10 @@ pub struct SgxReport {
 
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
 static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
-    // TODO: we will need ECDSA!
-    // &webpki::ECDSA_P256_SHA256,
-    // &webpki::ECDSA_P256_SHA384,
-    // &webpki::ECDSA_P384_SHA256,
-    // &webpki::ECDSA_P384_SHA384,
+    &webpki::ECDSA_P256_SHA256,
+    &webpki::ECDSA_P256_SHA384,
+    &webpki::ECDSA_P384_SHA256,
+    &webpki::ECDSA_P384_SHA384,
     &webpki::RSA_PKCS1_2048_8192_SHA256,
     &webpki::RSA_PKCS1_2048_8192_SHA384,
     &webpki::RSA_PKCS1_2048_8192_SHA512,
@@ -310,45 +309,6 @@ pub fn verify_ias_report(
         }
     }
 
-/*    let mut ca_reader = BufReader::new(&IAS_REPORT_CA[..]);
-
-    let mut root_store = rustls::RootCertStore::empty();
-    if root_store.add_pem_file(&mut ca_reader).is_err() {
-        return Err("Failed to add CA");
-    };
-
-    let trust_anchors: Vec<webpki::TrustAnchor> = root_store
-        .roots
-        .iter()
-        .map(|cert| cert.to_trust_anchor())
-        .collect();
-
-    let mut chain: Vec<&[u8]> = Vec::new();
-    chain.push(&ias_cert_dec);
-
-    let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);;
-
-    match sig_cert.verify_is_valid_tls_server_cert(
-        SUPPORTED_SIG_ALGS,
-        &webpki::TLSServerTrustAnchors(&trust_anchors),
-        &chain,
-        now_func.unwrap(),
-    ) {
-        Ok(_) => print_utf8(b"Cert is good"),
-        Err(e) => print_utf8(b"Cert verification error"),
-    }
-    print_utf8(b"verifyRA Intel Certificate is good");
-
-    // Verify the signature against the signing cert
-    match sig_cert.verify_signature(&webpki::RSA_PKCS1_2048_8192_SHA256, &attn_report_raw, &sig) {
-        Ok(_) => print_utf8(b"Signature good"),
-        Err(e) => {
-            print_utf8(b"Signature verification error");
-            return Err("Signature verification error");
-        }
-    }
-    print_utf8(b"verifyRA Intel signature is good");
-*/
     verify_attn_report(attn_report_raw, pub_k, xt_signer, xt_signer_attn)
 }
 
@@ -425,11 +385,33 @@ fn verify_attn_report(
 /*
         let ecc_handle = SgxEccHandle::new();
         let _result = ecc_handle.open();
-
-        let mut ephemeral_pub = sgx_ec256_public_t::default();
+*/
         if pub_k.len() != 64 {
             return Err("wrong size of signer ephemeral public key");
         }
+        if xt_signer_attn.len() != 16 {
+            return Err("wrong size of signer attestation signature");
+        }
+
+        let ecdsa_pubkey = ring::signature::UnparsedPublicKey::new(
+            &ring::signature::ECDSA_P256_SHA256_FIXED, 
+            pub_k);
+
+        
+        match ecdsa_pubkey.verify(&xt_signer, &xt_signer_attn.encode()) {
+            Ok(()) => {
+                #[cfg(test)]
+                println!("xt_signer ephemeral ECDSA signature is valid");
+            },
+            Err(e) => {
+                #[cfg(test)]
+                println!("ECDSA Signature ERROR: {}",e);  
+                return Err("bad signature");
+            }
+        }
+        
+        /*
+        //let mut ephemeral_pub = sgx_ec256_public_t::default();
         ephemeral_pub.gx.copy_from_slice(&pub_k[..32]);
         ephemeral_pub.gy.copy_from_slice(&pub_k[32..]);
         // key is stored in little-endian order in RA report. reverse!
@@ -437,9 +419,7 @@ fn verify_attn_report(
         ephemeral_pub.gy.reverse();
 
         let mut signature = sgx_ec256_signature_t::default();
-        if xt_signer_attn.len() != 16 {
-            return Err("wrong size of signer attestation signature");
-        }
+
         signature.x.copy_from_slice(&xt_signer_attn[..8]);
         signature.y.copy_from_slice(&xt_signer_attn[8..]);
 
