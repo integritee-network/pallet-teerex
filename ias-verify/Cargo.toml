@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 base64 = { version = "0.11", default-features = false, features = ["alloc"] }
-#serde = { version = "1.0.101", optional = true, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4", default-features = false }
 
@@ -33,20 +32,16 @@ features = ["disable_panic_handler", "disable_oom"]
 git = 'https://github.com/Phala-Network/phala-blockchain.git'
 default_features = false
 
-[dependencies.ring]
-git = 'https://github.com/Phala-Network/phala-blockchain.git'
-default_features = false
-features = ["alloc"]
+[dev-dependencies]
+hex-literal = "*"
 
 [features]
 default = ['std']
 std = [
     'codec/std',
     'frame-support/std',
-    #'serde',
     'sp-std/std',
     'sp-io/std',
     'serde_json/std',
     'webpki/std',
-    'ring/std',
 ]
