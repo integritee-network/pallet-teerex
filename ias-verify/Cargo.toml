@@ -38,6 +38,9 @@ git = 'https://github.com/Phala-Network/phala-blockchain.git'
 default_features = false
 features = ["alloc"]
 
+[dev-dependencies]
+hex-literal = "*"
+
 [features]
 default = ['std']
 std = [

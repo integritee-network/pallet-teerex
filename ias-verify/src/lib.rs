@@ -179,9 +179,7 @@ fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
 // make sure this function doesn't panic!
 pub fn verify_ias_report(
     cert_der: &[u8],
-    xt_signer_attn: &[u32],
-    xt_signer: &[u8],
-) -> Result<Vec<u8>, &'static str> {
+) -> Result<SgxReport, &'static str> {
     #[cfg(test)]
     println!("verifyRA: start verifying RA cert");
     // Before we reach here, the runtime already verifed the extrinsic is properly signed by the extrinsic sender
@@ -210,7 +208,7 @@ pub fn verify_ias_report(
     let pub_k = safe_indexing(cert_der, offset + 2, offset + len)?.to_vec(); // skip "00 04"
 
     #[cfg(test)]
-    println!("verifyRA public key: {:?}", pub_k);
+    println!("verifyRA public key: {:x?}", pub_k);
 
     // Search for Netscape Comment OID
     let ns_cmt_oid = &[
@@ -309,15 +307,12 @@ pub fn verify_ias_report(
         }
     }
 
-    verify_attn_report(attn_report_raw, pub_k, xt_signer, xt_signer_attn)
+    parse_report(attn_report_raw)
 }
 
-fn verify_attn_report(
+fn parse_report(
     report_raw: &[u8],
-    pub_k: Vec<u8>,
-    xt_signer: &[u8],
-    xt_signer_attn: &[u32],
-) -> Result<Vec<u8>, &'static str> {
+) -> Result<SgxReport, &'static str> {
     // parse attestation report
     let attn_report: Value = match serde_json::from_slice(report_raw) {
         Ok(report) => report,
@@ -369,79 +364,27 @@ fn verify_attn_report(
             Ok(q) => q,
             Err(_) => return Err("could not decode quote")
         };
-        // Borrow of packed field is unsafe in future Rust releases
+
         #[cfg(test)]
         {
             println!("sgx quote version = {}", sgx_quote.version);
             println!("sgx quote signature type = {}", sgx_quote.sign_type);
             //println!("sgx quote report_data = {:?}", sgx_quote.report_body.report_data.d[..32]);
-            println!("sgx quote mr_enclave = {:?}", sgx_quote.report_body.mr_enclave);
-            println!("sgx quote mr_signer = {:?}", sgx_quote.report_body.mr_signer);
+            println!("sgx quote mr_enclave = {:x?}", sgx_quote.report_body.mr_enclave);
+            println!("sgx quote mr_signer = {:x?}", sgx_quote.report_body.mr_signer);
+            println!("sgx quote report_data = {:x?}", sgx_quote.report_body.report_data.d.to_vec());   
         }
 
-        if sgx_quote.report_body.report_data.d.to_vec() == pub_k.to_vec() {
-            print_utf8(b"Remote attestation of enclave successful!");
-        }
-/*
-        let ecc_handle = SgxEccHandle::new();
-        let _result = ecc_handle.open();
-*/
-        if pub_k.len() != 64 {
-            return Err("wrong size of signer ephemeral public key");
-        }
-        if xt_signer_attn.len() != 16 {
-            return Err("wrong size of signer attestation signature");
-        }
-
-        let ecdsa_pubkey = ring::signature::UnparsedPublicKey::new(
-            &ring::signature::ECDSA_P256_SHA256_FIXED, 
-            pub_k);
-
-        
-        match ecdsa_pubkey.verify(&xt_signer, &xt_signer_attn.encode()) {
-            Ok(()) => {
-                #[cfg(test)]
-                println!("xt_signer ephemeral ECDSA signature is valid");
-            },
-            Err(e) => {
-                #[cfg(test)]
-                println!("ECDSA Signature ERROR: {}",e);  
-                return Err("bad signature");
-            }
-        }
-        
-        /*
-        //let mut ephemeral_pub = sgx_ec256_public_t::default();
-        ephemeral_pub.gx.copy_from_slice(&pub_k[..32]);
-        ephemeral_pub.gy.copy_from_slice(&pub_k[32..]);
-        // key is stored in little-endian order in RA report. reverse!
-        ephemeral_pub.gx.reverse();
-        ephemeral_pub.gy.reverse();
-
-        let mut signature = sgx_ec256_signature_t::default();
-
-        signature.x.copy_from_slice(&xt_signer_attn[..8]);
-        signature.y.copy_from_slice(&xt_signer_attn[8..]);
-
-        // TODO: error handling
-        if ecc_handle.ecdsa_verify_slice(&xt_signer, &ephemeral_pub, &signature) == Ok(false) {
-            return Err(
-                "wrong signature. Could not verify that the extrinsic signer is the enclave itself",
-            );
-        }
-*/
-        print_utf8(b"extrinsic signer pubkey has been attested");
         let mut xt_signer_array = [0u8; 32];
-        xt_signer_array.copy_from_slice(xt_signer);
+        xt_signer_array.copy_from_slice(&sgx_quote.report_body.report_data.d[..32]);
         Ok(SgxReport {
             mr_enclave: sgx_quote.report_body.mr_enclave,
             status: ra_status,
             pubkey: xt_signer_array,
             timestamp: ra_timestamp,
-        }
-        .encode())
+        })
     } else {
-        Err("Failed to fetch isvEnclaveQuoteBody from attestation report")
+        Err("Failed to parse isvEnclaveQuoteBody from attestation report")
     }
 }
 
@@ -449,23 +392,29 @@ fn verify_attn_report(
 mod tests {
     use super::*;
     use codec::Decode;
+    use hex_literal::hex;
     // reproduce with "substratee_worker dump_ra"
     const TEST1_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER1_MRENCLAVE1.der");
     const TEST2_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER2_MRENCLAVE2.der");
     const TEST3_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER3_MRENCLAVE2.der");
+    const TEST4_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST4.der");
+
     const TEST1_SIGNER_ATTN: &[u8] =
         include_bytes!("../test/test_ra_signer_attn_MRSIGNER1_MRENCLAVE1.bin");
     const TEST2_SIGNER_ATTN: &[u8] =
         include_bytes!("../test/test_ra_signer_attn_MRSIGNER2_MRENCLAVE2.bin");
     const TEST3_SIGNER_ATTN: &[u8] =
         include_bytes!("../test/test_ra_signer_attn_MRSIGNER3_MRENCLAVE2.bin");
-    // reproduce with "substratee_worker getsignkey"
+
+    // reproduce with "substratee_worker signing-key"
     const TEST1_SIGNER_PUB: &[u8] =
         include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER1_MRENCLAVE1.bin");
     const TEST2_SIGNER_PUB: &[u8] =
         include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER2_MRENCLAVE2.bin");
     const TEST3_SIGNER_PUB: &[u8] =
         include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER3_MRENCLAVE2.bin");
+    const TEST4_SIGNER_PUB: &[u8] =
+        include_bytes!("../test/enclave-signing-pubkey-TEST4.bin");        
 
     // reproduce with "make mrenclave" in worker repo root
     const TEST1_MRENCLAVE: &[u8] = &[
@@ -480,6 +429,10 @@ mod tests {
         4, 190, 230, 132, 211, 129, 59, 237, 101, 78, 55, 174, 144, 177, 91, 134, 1, 240, 27, 174,
         81, 139, 8, 22, 32, 241, 228, 103, 189, 43, 44, 102,
     ];
+
+    // MRSIGNER is 83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
+    const TEST4_MRENCLAVE: [u8; 32] = hex!("931b5a00a82d24be2b9edc1de5f36464a0cd0bd61bb277328627e98447090fc5");
+
     // unix epoch. must be later than this
     const TEST_TIMESTAMP: i64 = 1580587262i64;
 
@@ -493,60 +446,48 @@ mod tests {
     #[test]
     fn verify_ias_report_should_work() {
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST1_SIGNER_PUB);
-
-        assert!(report.is_ok());
-        let report: SgxReport = Decode::decode(&mut &report.unwrap()[..]).unwrap();
-        assert_eq!(report.mr_enclave, TEST1_MRENCLAVE);
-        assert!(report.timestamp >= TEST_TIMESTAMP);
-        assert_eq!(report.status, SgxStatus::GroupOutOfDate);
-    }
-
-    #[test]
-    fn verify_ias_report_wrong_signer_should_fail() {
-        // wrong ed25519, good ephemeral ecdsa
-        let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
-        assert!(report.is_err());
-        // wrong ed25519 and ephemeral ecdsa, but attn valid for that ed25519
-        let signer_attn: [u32; 16] = Decode::decode(&mut TEST2_SIGNER_ATTN).unwrap();
-        let report = verify_ias_report(TEST1_CERT, &signer_attn, TEST2_SIGNER_PUB);
-        assert!(report.is_err());
+        let report = verify_ias_report(TEST4_CERT);
+        let report = report.unwrap();
+        assert_eq!(report.mr_enclave, TEST4_MRENCLAVE);
+        assert!(report.timestamp >= TEST_TIMESTAMP); 
+        assert_eq!(report.pubkey, TEST4_SIGNER_PUB);
+        //assert_eq!(report.status, SgxStatus::GroupOutOfDate);
+        assert_eq!(report.status, SgxStatus::ConfigurationNeeded);
     }
 
     #[test]
     fn verify_zero_length_cert_returns_err() {
         // CERT empty, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_ias_report(&Vec::new()[..], &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(&Vec::new()[..]).is_err())
     }
 
     #[test]
     fn verify_wrong_cert_is_err() {
         // CERT wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_ias_report(CERT_WRONG_PLATFORM_BLOB, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_WRONG_PLATFORM_BLOB).is_err())
     }
 
     #[test]
     fn verify_wrong_fake_enclave_quote_is_err() {
         // quote wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_ias_report(CERT_FAKE_QUOTE_STATUS, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_FAKE_QUOTE_STATUS).is_err())
     }
 
     #[test]
     fn verify_wrong_sig_is_err() {
         // sig wrong, argument 2 and 3 are wrong too!
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_ias_report(CERT_WRONG_SIG, &signer_attn, TEST1_SIGNER_PUB).is_err())
+        assert!(verify_ias_report(CERT_WRONG_SIG).is_err())
     }
 
     #[test]
     fn verify_short_cert_is_err() {
         let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
-        assert!(verify_ias_report(CERT_TOO_SHORT1, &signer_attn, TEST1_SIGNER_PUB).is_err());
-        assert!(verify_ias_report(CERT_TOO_SHORT2, &signer_attn, TEST1_SIGNER_PUB).is_err());
+        assert!(verify_ias_report(CERT_TOO_SHORT1).is_err());
+        assert!(verify_ias_report(CERT_TOO_SHORT2).is_err());
     }
 
     #[test]
