@@ -17,8 +17,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use host_calls::runtime_interfaces::verify_ra_report;
-use host_calls::SgxReport;
 use sp_core::H256;
 use sp_std::prelude::*;
 use sp_std::str;
@@ -26,7 +24,7 @@ use sp_io::misc::print_utf8;
 use frame_support::{decl_event, decl_module, decl_storage, decl_error, 
     dispatch::DispatchResult, ensure};
 use frame_system::{self as system, ensure_signed};
-
+use ias_verify::{SgxReport, verify_ias_report};
 pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -91,16 +89,14 @@ decl_module! {
         
         // the substraTEE-worker wants to register his enclave
         #[weight = frame_support::weights::SimpleDispatchInfo::default()]
-        pub fn register_enclave(origin, ra_report: Vec<u8>, ra_signer_attn: [u32; 16], worker_url: Vec<u8>) -> DispatchResult {
+        pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             print_utf8(b"substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             print_utf8(b"substraTEE_registry: parameter lenght ok");
-            match verify_ra_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
-                Some(rep) => {
-                    print_utf8(b"substraTEE_registry: host_call successful");
-                    let report = SgxReport::decode(&mut &rep[..]).unwrap();
+            match verify_ias_report(&ra_report) {
+                Ok(report) => {
                     let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
                         Ok(signer) => signer,
                         Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
@@ -120,7 +116,7 @@ decl_module! {
                     Ok(())
 
                 }
-                None => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
+                Err(_) => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
             }
         }
         // TODO: we can't expect a dead enclave to unregister itself
