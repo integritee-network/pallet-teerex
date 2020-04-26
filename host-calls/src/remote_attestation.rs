@@ -335,13 +335,14 @@ fn verify_attn_report(
         pub_part.reverse();
         pubkey.append(&mut pub_part.to_vec());
 
-        #[cfg(test)]
+/*        #[cfg(test)]
         {
             println!("faking pubkey");
             // dumped in log from worker dump-ra before byte-flipping:
-            let pubkey = hex_literal::hex!("04 bf6df80bec01cc4d89a56de8146cf5040c4da8e9ff4081edced05b40d1b1a7d9 c2478c87710ac25aaed30d125c63edb3beba25b5564a5f222fdc09298bad2a67");
+            pubkey = hex_literal::hex!("04 bf6df80bec01cc4d89a56de8146cf5040c4da8e9ff4081edced05b40d1b1a7d9 c2478c87710ac25aaed30d125c63edb3beba25b5564a5f222fdc09298bad2a67").to_vec();
 
         }
+        */
         println!("ephemeral ECDSA pubkey {:02x}", pubkey.iter().format(""));
         
         let ecdsa_pubkey = ring::signature::UnparsedPublicKey::new(
