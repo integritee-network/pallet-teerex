@@ -102,10 +102,10 @@ pub struct SgxReport {
 
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
 static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
-    &webpki::ECDSA_P256_SHA256,
-    &webpki::ECDSA_P256_SHA384,
-    &webpki::ECDSA_P384_SHA256,
-    &webpki::ECDSA_P384_SHA384,
+    //&webpki::ECDSA_P256_SHA256,
+    //&webpki::ECDSA_P256_SHA384,
+    //&webpki::ECDSA_P384_SHA256,
+    //&webpki::ECDSA_P384_SHA384,
     &webpki::RSA_PKCS1_2048_8192_SHA256,
     &webpki::RSA_PKCS1_2048_8192_SHA384,
     &webpki::RSA_PKCS1_2048_8192_SHA512,
