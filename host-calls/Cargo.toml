@@ -18,7 +18,7 @@ serde_json      = { version = "1.0", optional = true }
 serde_derive    = { version = "1.0", optional = true }
 webpki          = { version = "0.21", default-features = false }
 ring            = { version = "0.16.12", features=["test_logging"] } #{ version = "0.16.0", path = "../../ring/"}
-
+hex-literal ="*"
 [dependencies.codec]
 default-features = false
 package = "parity-scale-codec"
