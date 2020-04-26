@@ -42,6 +42,9 @@ version = '2.0.0-alpha.6'
 default-features = false
 version = '2.0.0-alpha.6'
 
+[dev-dependencies]
+hex-literal = "*"
+
 [dev-dependencies.sp-runtime]
 default-features = false
 version = '2.0.0-alpha.6'

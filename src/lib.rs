@@ -89,16 +89,14 @@ decl_module! {
         
         // the substraTEE-worker wants to register his enclave
         #[weight = frame_support::weights::SimpleDispatchInfo::default()]
-        pub fn register_enclave(origin, ra_report: Vec<u8>, ra_signer_attn: [u32; 16], worker_url: Vec<u8>) -> DispatchResult {
+        pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             print_utf8(b"substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             print_utf8(b"substraTEE_registry: parameter lenght ok");
-            match verify_ias_report(&ra_report, &ra_signer_attn.to_vec(), &sender.encode()) {
-                Ok(rep) => {
-                    print_utf8(b"substraTEE_registry: host_call successful");
-                    let report = SgxReport::decode(&mut &rep[..]).unwrap();
+            match verify_ias_report(&ra_report) {
+                Ok(report) => {
                     let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
                         Ok(signer) => signer,
                         Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
