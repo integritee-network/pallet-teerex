@@ -28,6 +28,7 @@ use chrono::prelude::*;
 //use super::{SgxReport, SgxStatus};
 use codec::{Encode, Decode};
 use serde_json::Value;
+use frame_support::debug::native;
 
 const SGX_REPORT_DATA_SIZE: usize = 64;
 #[derive(Encode, Decode, Copy, Clone)]
@@ -76,8 +77,7 @@ pub struct SgxQuote {
     //signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
 }
 
-#[derive(Encode, Decode, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
 pub enum SgxStatus {
     Invalid,
     Ok,
@@ -91,8 +91,7 @@ impl Default for SgxStatus {
     }
 }
 
-#[derive(Encode, Decode, Default, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
 pub struct SgxReport {
     pub mr_enclave: [u8; 32],
     pub pubkey: [u8; 32],

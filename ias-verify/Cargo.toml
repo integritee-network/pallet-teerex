@@ -28,6 +28,10 @@ default-features = false
 version = '2.0.0-alpha.6'
 features = ["disable_panic_handler", "disable_oom"]
 
+[dependencies.sp-core]
+default-features = false
+version = '2.0.0-alpha.6'
+
 [dependencies.webpki]
 git = 'https://github.com/Phala-Network/phala-blockchain.git'
 default_features = false

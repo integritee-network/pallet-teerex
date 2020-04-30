@@ -23,6 +23,7 @@ use sp_std::str;
 use sp_io::misc::print_utf8;
 use frame_support::{decl_event, decl_module, decl_storage, decl_error, 
     dispatch::DispatchResult, ensure};
+use frame_support::debug::native;
 use frame_system::{self as system, ensure_signed};
 use ias_verify::{SgxReport, verify_ias_report};
 pub trait Trait: system::Trait {
@@ -32,8 +33,7 @@ pub trait Trait: system::Trait {
 const MAX_RA_REPORT_LEN: usize = 4096;
 const MAX_URL_LEN: usize = 256;
 
-#[derive(Encode, Decode, Default, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
 pub struct Enclave<PubKey, Url> {
     pub pubkey: PubKey, // FIXME: this is redundant information
     pub mr_enclave: [u8; 32],
@@ -43,8 +43,7 @@ pub struct Enclave<PubKey, Url> {
 
 pub type ShardIdentifier = H256;
 
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-//#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, sp_core::RuntimeDebug)]
 pub struct Request {
     pub shard: ShardIdentifier,
     pub cyphertext: Vec<u8>,
@@ -64,7 +63,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait> as substraTEERegistry {
+    trait Store for Module<T: Trait> as SubstrateeRegistry {
         // Simple lists are not supported in runtime modules as theoretically O(n)
         // operations can be executed while only being charged O(1), see substrate
         // Kitties tutorial Chapter 2, Tracking all Kitties.
@@ -97,6 +96,7 @@ decl_module! {
             print_utf8(b"substraTEE_registry: parameter lenght ok");
             match verify_ias_report(&ra_report) {
                 Ok(report) => {
+                    native::info!("RA Report: {:?}", report);
                     let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
                         Ok(signer) => signer,
                         Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
@@ -147,7 +147,7 @@ decl_module! {
             let sender_index = Self::enclave_index(&sender);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
-
+            native::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
             Self::deposit_event(RawEvent::CallConfirmed(sender, call_hash));
             Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
             Ok(())
