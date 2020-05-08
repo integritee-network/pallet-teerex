@@ -70,12 +70,12 @@ decl_storage! {
 
         // watch out: we start indexing with 1 instead of zero in order to
         // avoid ambiguity between Null and 0
-        pub EnclaveRegistry get(enclave): map hasher(blake2_128_concat) u64 => Enclave<T::AccountId, Vec<u8>>;
-        pub EnclaveCount get(enclave_count): u64;
-        pub EnclaveIndex get(enclave_index): map hasher(blake2_128_concat) T::AccountId => u64;
-        pub LatestIpfsHash get(latest_ipfs_hash) : map hasher(blake2_128_concat) ShardIdentifier => Vec<u8>;
+        pub EnclaveRegistry get(fn enclave): map hasher(blake2_128_concat) u64 => Enclave<T::AccountId, Vec<u8>>;
+        pub EnclaveCount get(fn enclave_count): u64;
+        pub EnclaveIndex get(fn enclave_index): map hasher(blake2_128_concat) T::AccountId => u64;
+        pub LatestIpfsHash get(fn latest_ipfs_hash) : map hasher(blake2_128_concat) ShardIdentifier => Vec<u8>;
         // enclave index of the worker that recently committed an update
-        pub WorkerForShard get(worker_for_shard) : map hasher(blake2_128_concat) ShardIdentifier => u64;
+        pub WorkerForShard get(fn worker_for_shard) : map hasher(blake2_128_concat) ShardIdentifier => u64;
     }
 }
 
@@ -87,7 +87,7 @@ decl_module! {
         fn deposit_event() = default;
         
         // the substraTEE-worker wants to register his enclave
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 1000]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             print_utf8(b"substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
@@ -122,7 +122,7 @@ decl_module! {
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 1000]
         pub fn unregister_enclave(origin) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -131,7 +131,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 1000]
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
             Self::deposit_event(RawEvent::Forwarded(request));
@@ -139,7 +139,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed call to confirm a state update
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 1000]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: Vec<u8>, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),

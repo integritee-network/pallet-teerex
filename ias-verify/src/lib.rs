@@ -28,7 +28,6 @@ use chrono::prelude::*;
 //use super::{SgxReport, SgxStatus};
 use codec::{Encode, Decode};
 use serde_json::Value;
-use frame_support::debug::native;
 
 const SGX_REPORT_DATA_SIZE: usize = 64;
 #[derive(Encode, Decode, Copy, Clone)]
