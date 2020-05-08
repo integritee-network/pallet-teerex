@@ -1,11 +1,11 @@
 // Creating mock runtime here
 
 use crate::{Module, Trait};
-use sp_core::{hashing::blake2_256, sr25519, Blake2Hasher, Pair, Public, H256};
+use sp_core::{sr25519, H256};
 use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_runtime::{
-    traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}, 
+    traits::{BlakeTwo256, IdentityLookup, Verify},
     testing::Header, 
     Perbill,
 };
@@ -35,6 +35,9 @@ impl system::Trait for TestRuntime {
 	type Event = TestEvent;
 	type BlockHashCount = BlockHashCount;
 	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = ();
+	type BlockExecutionWeight = ();
+	type ExtrinsicBaseWeight = ();
 	type MaximumBlockLength = MaximumBlockLength;
 	type AvailableBlockRatio = AvailableBlockRatio;
 	type Version = ();

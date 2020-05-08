@@ -15,10 +15,10 @@
 
 */
 use super::*;
-use crate::{Error, mock::*};
-use frame_support::{assert_ok, assert_noop, IterableStorageMap };
-use codec::{Decode, Encode};
-use sp_core::{sr25519, Blake2Hasher, Pair, Public, H256};
+use crate::mock::*;
+use frame_support::{assert_ok, IterableStorageMap };
+use codec::Decode;
+use sp_core::{sr25519, H256};
 use sp_runtime::traits::IdentifyAccount;
 use hex_literal::hex;
 
@@ -96,7 +96,7 @@ fn add_and_remove_enclave_works() {
 fn list_enclaves_works() {
 	new_test_ext().execute_with(|| {
 		let signer = get_signer(TEST4_SIGNER_PUB);
-		let e_1: Enclave<AccountId, Vec<u8>> = Enclave {
+		let _e_1: Enclave<AccountId, Vec<u8>> = Enclave {
 			pubkey: signer.clone(),
 			mr_enclave: TEST4_MRENCLAVE,
 			timestamp: TEST4_TIMESTAMP,
@@ -202,7 +202,7 @@ fn update_enclave_url_works() {
 	new_test_ext().execute_with(|| {
 		let signer = get_signer(TEST4_SIGNER_PUB);
 		let url2 = "my fancy url".as_bytes();
-		let e_1: Enclave<AccountId, Vec<u8>> = Enclave {
+		let _e_1: Enclave<AccountId, Vec<u8>> = Enclave {
 			pubkey: signer.clone(),
 			mr_enclave: TEST4_MRENCLAVE,
 			timestamp: TEST4_TIMESTAMP,
