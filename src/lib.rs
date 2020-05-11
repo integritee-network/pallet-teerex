@@ -22,7 +22,7 @@ use sp_std::prelude::*;
 use sp_std::str;
 use sp_io::misc::print_utf8;
 use frame_support::{decl_event, decl_module, decl_storage, decl_error, 
-    dispatch::DispatchResult, ensure};
+    dispatch::DispatchResult, ensure, weights::{DispatchClass, Pays}};
 use frame_support::debug::native;
 use frame_system::{self as system, ensure_signed};
 use ias_verify::{SgxReport, verify_ias_report};
@@ -87,7 +87,7 @@ decl_module! {
         fn deposit_event() = default;
         
         // the substraTEE-worker wants to register his enclave
-        #[weight = 1000]
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             print_utf8(b"substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
@@ -122,7 +122,7 @@ decl_module! {
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
-        #[weight = 1000]
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn unregister_enclave(origin) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -131,7 +131,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 1000]
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
             Self::deposit_event(RawEvent::Forwarded(request));
@@ -139,7 +139,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed call to confirm a state update
-        #[weight = 1000]
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: Vec<u8>, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
