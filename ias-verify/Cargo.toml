@@ -34,6 +34,7 @@ version = '2.0.0-alpha.7'
 
 [dependencies.webpki]
 git = 'https://github.com/Phala-Network/phala-blockchain.git'
+rev = "7d342012105f2125ca0e48a3b9c702176af23471"
 default_features = false
 
 [dev-dependencies]
