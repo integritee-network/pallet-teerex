@@ -17,17 +17,23 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+use frame_support::debug::native;
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage,
+    dispatch::DispatchResult,
+    ensure,
+    traits::{Currency, ExistenceRequirement},
+    weights::{DispatchClass, Pays},
+};
+use frame_system::{self as system, ensure_signed};
+use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
+use sp_io::misc::print_utf8;
 use sp_std::prelude::*;
 use sp_std::str;
-use sp_io::misc::print_utf8;
-use frame_support::{decl_event, decl_module, decl_storage, decl_error, 
-    dispatch::DispatchResult, ensure, weights::{DispatchClass, Pays}};
-use frame_support::debug::native;
-use frame_system::{self as system, ensure_signed};
-use ias_verify::{SgxReport, verify_ias_report};
 pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Currency: Currency<<Self as system::Trait>::AccountId>;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -42,6 +48,10 @@ pub struct Enclave<PubKey, Url> {
 }
 
 pub type ShardIdentifier = H256;
+
+// Disambiguate associated types
+pub type AccountId<T> = <T as frame_system::Trait>::AccountId;
+pub type BalanceOf<T> = <<T as Trait>::Currency as Currency<AccountId<T>>>::Balance;
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, sp_core::RuntimeDebug)]
 pub struct Request {
@@ -58,6 +68,8 @@ decl_event!(
 		RemovedEnclave(AccountId),
 		UpdatedIpfsHash(ShardIdentifier, u64, Vec<u8>),
 		Forwarded(Request),
+		ShieldFunds(Vec<u8>),
+		UnshieldedFunds(AccountId),
 		CallConfirmed(AccountId, Vec<u8>),
 	}
 );
@@ -85,7 +97,7 @@ decl_module! {
         type Error = Error<T>;
 
         fn deposit_event() = default;
-        
+
         // the substraTEE-worker wants to register his enclave
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
@@ -150,6 +162,28 @@ decl_module! {
             native::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
             Self::deposit_event(RawEvent::CallConfirmed(sender, call_hash));
             Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
+            Ok(())
+        }
+
+        /// Sent by a client who requests to get shielded funds managed by an enclave. For this on-chain balance is sent to the bonding_account of the enclave.
+        /// The bonding_account does not have a private key as the balance on this account is exclusively managed from withing the pallet-substratee-registry.
+        /// Note: The bonding_account is bit-equivalent to the worker shard.
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        pub fn shield_funds(origin, incognito_account_encrypted: Vec<u8>, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+            // Todo verify shard
+            T::Currency::transfer(&sender, &bonding_account, amount, ExistenceRequirement::AllowDeath)?;
+            Self::deposit_event(RawEvent::ShieldFunds(incognito_account_encrypted));
+            Ok(())
+        }
+
+        /// Sent by enclaves only as a result of an `unshield` request from a client to an enclave.
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, shard: T::AccountId) -> DispatchResult {
+            let _sender = ensure_signed(origin)?;
+            // Todo: Verify shard
+            T::Currency::transfer(&shard, &public_account, amount, ExistenceRequirement::AllowDeath)?;
+            Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
             Ok(())
         }
     }
@@ -230,4 +264,3 @@ impl<T: Trait> Module<T> {
 mod mock;
 #[cfg(test)]
 mod tests;
-
