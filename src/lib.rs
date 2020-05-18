@@ -17,15 +17,20 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+use frame_support::debug::native;
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage,
+    dispatch::DispatchResult,
+    ensure,
+    traits::{Currency, ExistenceRequirement},
+    weights::{DispatchClass, Pays},
+};
+use frame_system::{self as system, ensure_signed};
+use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
+use sp_io::misc::print_utf8;
 use sp_std::prelude::*;
 use sp_std::str;
-use sp_io::misc::print_utf8;
-use frame_support::{decl_event, decl_module, decl_storage, decl_error,
-    dispatch::DispatchResult, ensure, weights::{DispatchClass, Pays}, traits::{Currency, ExistenceRequirement}};
-use frame_support::debug::native;
-use frame_system::{self as system, ensure_signed};
-use ias_verify::{SgxReport, verify_ias_report};
 pub trait Trait: system::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type Currency: Currency<<Self as system::Trait>::AccountId>;
@@ -92,7 +97,7 @@ decl_module! {
         type Error = Error<T>;
 
         fn deposit_event() = default;
-        
+
         // the substraTEE-worker wants to register his enclave
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
@@ -259,4 +264,3 @@ impl<T: Trait> Module<T> {
 mod mock;
 #[cfg(test)]
 mod tests;
-

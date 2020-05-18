@@ -1,53 +1,53 @@
 // Creating mock runtime here
 
 use crate::{Module, Trait};
-use sp_core::{sr25519, H256};
-use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
+use sp_core::{sr25519, H256};
 use sp_runtime::{
+    testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Verify},
-    testing::Header, 
     Perbill,
 };
 
 impl_outer_origin! {
-	pub enum Origin for TestRuntime {}
+    pub enum Origin for TestRuntime {}
 }
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct TestRuntime;
 parameter_types! {
-	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = 1024;
-	pub const MaximumBlockLength: u32 = 2 * 1024;
-	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: Weight = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
 }
 impl system::Trait for TestRuntime {
-	type Origin = Origin;
-	type Call = ();
-	type Index = u64;
-	type BlockNumber = u64;
-	type Hash = H256;
-	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
-	type Event = TestEvent;
-	type BlockHashCount = BlockHashCount;
-	type MaximumBlockWeight = MaximumBlockWeight;
-	type DbWeight = ();
-	type BlockExecutionWeight = ();
-	type ExtrinsicBaseWeight = ();
-	type MaximumBlockLength = MaximumBlockLength;
-	type AvailableBlockRatio = AvailableBlockRatio;
-	type Version = ();
-	type ModuleToIndex = ();
-	type AccountData = ();
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
+    type Origin = Origin;
+    type Call = ();
+    type Index = u64;
+    type BlockNumber = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = AccountId;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = TestEvent;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 impl Trait for TestRuntime {
-	type Event = TestEvent;
+    type Event = TestEvent;
 }
 
 // Easy access alias
@@ -71,12 +71,12 @@ pub type Signature = sr25519::Signature;
 pub type AccountId = <Signature as Verify>::Signer;
 
 mod registry {
-	pub use crate::Event;
+    pub use crate::Event;
 }
 
 impl_outer_event! {
-	pub enum TestEvent for TestRuntime {
-		registry<T>,
-		system<T>,
-	}
+    pub enum TestEvent for TestRuntime {
+        registry<T>,
+        system<T>,
+    }
 }

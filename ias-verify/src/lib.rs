@@ -17,8 +17,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_std::prelude::*;
 use chrono::prelude::*;
+use sp_std::prelude::*;
 //use itertools::Itertools;
 //use log::*;
 //use serde_json::Value;
@@ -26,13 +26,13 @@ use chrono::prelude::*;
 //use sgx_ucrypto::SgxEccHandle;
 
 //use super::{SgxReport, SgxStatus};
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use serde_json::Value;
 
 const SGX_REPORT_DATA_SIZE: usize = 64;
 #[derive(Encode, Decode, Copy, Clone)]
 pub struct SgxReportData {
-    d: [u8; SGX_REPORT_DATA_SIZE]
+    d: [u8; SGX_REPORT_DATA_SIZE],
 }
 
 // see Intel SGX SDK https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_report.h
@@ -43,37 +43,37 @@ const SGX_REPORT_BODY_RESERVED4_BYTES: usize = 42;
 
 #[derive(Encode, Decode, Copy, Clone)]
 pub struct SgxReportBody {
-    cpu_svn: [u8; 16],        /* (  0) Security Version of the CPU */
-    misc_select: [u8; 4],    /* ( 16) Which fields defined in SSA.MISC */
-    reserved1: [u8; SGX_REPORT_BODY_RESERVED1_BYTES],  /* ( 20) */
-    isv_ext_prod_id: [u8; 16],  /* ( 32) ISV assigned Extended Product ID */
-    attributes: [u8; 16],       /* ( 48) Any special Capabilities the Enclave possess */
-    mr_enclave: [u8; 32],     /* ( 64) The value of the enclave's ENCLAVE measurement */
-    reserved2: [u8; SGX_REPORT_BODY_RESERVED2_BYTES],  /* ( 96) */
-    mr_signer: [u8; 32],      /* (128) The value of the enclave's SIGNER measurement */
-    reserved3: [u8; SGX_REPORT_BODY_RESERVED3_BYTES],  /* (160) */
-    config_id: [u8; 64],      /* (192) CONFIGID */
-    isv_prod_id: u16,    /* (256) Product ID of the Enclave */
-    isv_svn: u16,        /* (258) Security Version of the Enclave */
-    config_svn: u16,     /* (260) CONFIGSVN */
-    reserved4: [u8; SGX_REPORT_BODY_RESERVED4_BYTES],  /* (262) */
-    isv_family_id: [u8; 16],  /* (304) ISV assigned Family ID */
-    report_data: SgxReportData,    /* (320) Data provided by the user */    
+    cpu_svn: [u8; 16],    /* (  0) Security Version of the CPU */
+    misc_select: [u8; 4], /* ( 16) Which fields defined in SSA.MISC */
+    reserved1: [u8; SGX_REPORT_BODY_RESERVED1_BYTES], /* ( 20) */
+    isv_ext_prod_id: [u8; 16], /* ( 32) ISV assigned Extended Product ID */
+    attributes: [u8; 16], /* ( 48) Any special Capabilities the Enclave possess */
+    mr_enclave: [u8; 32], /* ( 64) The value of the enclave's ENCLAVE measurement */
+    reserved2: [u8; SGX_REPORT_BODY_RESERVED2_BYTES], /* ( 96) */
+    mr_signer: [u8; 32],  /* (128) The value of the enclave's SIGNER measurement */
+    reserved3: [u8; SGX_REPORT_BODY_RESERVED3_BYTES], /* (160) */
+    config_id: [u8; 64],  /* (192) CONFIGID */
+    isv_prod_id: u16,     /* (256) Product ID of the Enclave */
+    isv_svn: u16,         /* (258) Security Version of the Enclave */
+    config_svn: u16,      /* (260) CONFIGSVN */
+    reserved4: [u8; SGX_REPORT_BODY_RESERVED4_BYTES], /* (262) */
+    isv_family_id: [u8; 16], /* (304) ISV assigned Family ID */
+    report_data: SgxReportData, /* (320) Data provided by the user */
 }
 
 // see Intel SGX SDK https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_quote.h
 #[derive(Encode, Decode, Copy, Clone)]
 pub struct SgxQuote {
-    version: u16,        /* 0   */
-    sign_type: u16,      /* 2   */
-    epid_group_id: u32,  /* 4   */
-    qe_svn: u16,         /* 8   */
-    pce_svn: u16,        /* 10  */
-    xeid: u32,           /* 12  */
-    basename: [u8; 32],   /* 16  */
+    version: u16,       /* 0   */
+    sign_type: u16,     /* 2   */
+    epid_group_id: u32, /* 4   */
+    qe_svn: u16,        /* 8   */
+    pce_svn: u16,       /* 10  */
+    xeid: u32,          /* 12  */
+    basename: [u8; 32], /* 16  */
     report_body: SgxReportBody, /* 48  */
-    //signature_len: u32,    /* 432 */
-    //signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
+                        //signature_len: u32,    /* 432 */
+                        //signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
 }
 
 #[derive(Encode, Decode, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
@@ -154,7 +154,6 @@ pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTr
 
 ]);
 
-
 // prevents panics in case of index out of bounds
 fn safe_indexing(data: &[u8], start: usize, end: usize) -> Result<&[u8], &'static str> {
     if start > end {
@@ -173,9 +172,7 @@ fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
 }
 
 // make sure this function doesn't panic!
-pub fn verify_ias_report(
-    cert_der: &[u8],
-) -> Result<SgxReport, &'static str> {
+pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     #[cfg(test)]
     println!("verifyRA: start verifying RA cert");
     // Before we reach here, the runtime already verifed the extrinsic is properly signed by the extrinsic sender
@@ -218,7 +215,7 @@ pub fn verify_ias_report(
         _ => return Err("Certificate to check is empty"),
     };
     offset += 12; // 11 + TAG (0x04)
-    
+
     #[cfg(test)]
     println!("netscape");
     // Obtain Netscape Comment length
@@ -256,37 +253,33 @@ pub fn verify_ias_report(
     let chain: Vec<&[u8]> = Vec::new();
     // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
     // chain wasm update or by some sudo call
-	let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
-	
-	match sig_cert.verify_is_valid_tls_server_cert(
-		SUPPORTED_SIG_ALGS,
-		&IAS_SERVER_ROOTS,
-		&chain,
-		now_func
-	) {
-		Ok(()) => {
+    let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
+
+    match sig_cert.verify_is_valid_tls_server_cert(
+        SUPPORTED_SIG_ALGS,
+        &IAS_SERVER_ROOTS,
+        &chain,
+        now_func,
+    ) {
+        Ok(()) => {
             #[cfg(test)]
-            println!("CA is valid");    
-        },
-		Err(_e) => {
-            #[cfg(test)]
-            println!("CA ERROR: {}", _e);  
-            return Err("CA verification failed")
+            println!("CA is valid");
         }
-	};
-    
-    match sig_cert.verify_signature(
-        &webpki::RSA_PKCS1_2048_8192_SHA256,
-        &attn_report_raw,
-        &sig) 
-    {
+        Err(_e) => {
+            #[cfg(test)]
+            println!("CA ERROR: {}", _e);
+            return Err("CA verification failed");
+        }
+    };
+
+    match sig_cert.verify_signature(&webpki::RSA_PKCS1_2048_8192_SHA256, &attn_report_raw, &sig) {
         Ok(()) => {
             #[cfg(test)]
             println!("IAS signature is valid");
-        },
+        }
         Err(_e) => {
             #[cfg(test)]
-            println!("RSA Signature ERROR: {}",_e);  
+            println!("RSA Signature ERROR: {}", _e);
             return Err("bad signature");
         }
     }
@@ -294,9 +287,7 @@ pub fn verify_ias_report(
     parse_report(attn_report_raw)
 }
 
-fn parse_report(
-    report_raw: &[u8],
-) -> Result<SgxReport, &'static str> {
+fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
     // parse attestation report
     let attn_report: Value = match serde_json::from_slice(report_raw) {
         Ok(report) => report,
@@ -315,24 +306,25 @@ fn parse_report(
         }
         _ => return Err("Failed to fetch timestamp from attestation report"),
     };
-    
+
     #[cfg(test)]
-    println!("verifyRA attestation timestamp [unix epoch]: {}", ra_timestamp);
+    println!(
+        "verifyRA attestation timestamp [unix epoch]: {}",
+        ra_timestamp
+    );
 
     // get quote status (mandatory field)
     let ra_status = match &attn_report["isvEnclaveQuoteStatus"] {
-        Value::String(quote_status) => {
-            match quote_status.as_ref() {
-                "OK" => SgxStatus::Ok,
-                "GROUP_OUT_OF_DATE" => SgxStatus::GroupOutOfDate,
-                "GROUP_REVOKED" => SgxStatus::GroupRevoked,
-                "CONFIGURATION_NEEDED" => SgxStatus::ConfigurationNeeded,
-                _ => SgxStatus::Invalid,
-            }
-        }
+        Value::String(quote_status) => match quote_status.as_ref() {
+            "OK" => SgxStatus::Ok,
+            "GROUP_OUT_OF_DATE" => SgxStatus::GroupOutOfDate,
+            "GROUP_REVOKED" => SgxStatus::GroupRevoked,
+            "CONFIGURATION_NEEDED" => SgxStatus::ConfigurationNeeded,
+            _ => SgxStatus::Invalid,
+        },
         _ => return Err("Failed to fetch isvEnclaveQuoteStatus from attestation report"),
     };
-    
+
     #[cfg(test)]
     println!("verifyRA attestation status is: {:?}", ra_status);
     // parse quote body
@@ -346,7 +338,7 @@ fn parse_report(
         // TODO: lack security check here
         let sgx_quote: SgxQuote = match Decode::decode(&mut &quote[..]) {
             Ok(q) => q,
-            Err(_) => return Err("could not decode quote")
+            Err(_) => return Err("could not decode quote"),
         };
 
         #[cfg(test)]
@@ -354,9 +346,18 @@ fn parse_report(
             println!("sgx quote version = {}", sgx_quote.version);
             println!("sgx quote signature type = {}", sgx_quote.sign_type);
             //println!("sgx quote report_data = {:?}", sgx_quote.report_body.report_data.d[..32]);
-            println!("sgx quote mr_enclave = {:x?}", sgx_quote.report_body.mr_enclave);
-            println!("sgx quote mr_signer = {:x?}", sgx_quote.report_body.mr_signer);
-            println!("sgx quote report_data = {:x?}", sgx_quote.report_body.report_data.d.to_vec());   
+            println!(
+                "sgx quote mr_enclave = {:x?}",
+                sgx_quote.report_body.mr_enclave
+            );
+            println!(
+                "sgx quote mr_signer = {:x?}",
+                sgx_quote.report_body.mr_signer
+            );
+            println!(
+                "sgx quote report_data = {:x?}",
+                sgx_quote.report_body.report_data.d.to_vec()
+            );
         }
 
         let mut xt_signer_array = [0u8; 32];
@@ -394,14 +395,17 @@ mod tests {
         include_bytes!("../test/test_ra_signer_attn_MRSIGNER3_MRENCLAVE2.bin");
 
     // reproduce with "substratee_worker signing-key"
-    const TEST1_SIGNER_PUB: &[u8] = include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER1_MRENCLAVE1.bin");
-    const TEST2_SIGNER_PUB: &[u8] = include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER2_MRENCLAVE2.bin");
-    const TEST3_SIGNER_PUB: &[u8] = include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER3_MRENCLAVE2.bin");
-    const TEST4_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST4.bin");        
+    const TEST1_SIGNER_PUB: &[u8] =
+        include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER1_MRENCLAVE1.bin");
+    const TEST2_SIGNER_PUB: &[u8] =
+        include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER2_MRENCLAVE2.bin");
+    const TEST3_SIGNER_PUB: &[u8] =
+        include_bytes!("../test/test_ra_signer_pubkey_MRSIGNER3_MRENCLAVE2.bin");
+    const TEST4_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST4.bin");
     // equal to TEST4!
-    const TEST5_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST5.bin");        
-    const TEST6_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST6.bin");        
-    const TEST7_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST7.bin");        
+    const TEST5_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST5.bin");
+    const TEST6_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST6.bin");
+    const TEST7_SIGNER_PUB: &[u8] = include_bytes!("../test/enclave-signing-pubkey-TEST7.bin");
 
     // reproduce with "make mrenclave" in worker repo root
     const TEST1_MRENCLAVE: &[u8] = &[
@@ -418,18 +422,22 @@ mod tests {
     ];
 
     // MRSIGNER is 83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
-    const TEST4_MRENCLAVE: [u8; 32] = hex!("7a3454ec8f42e265cb5be7dfd111e1d95ac6076ed82a0948b2e2a45cf17b62a0");
-    const TEST5_MRENCLAVE: [u8; 32] = hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
+    const TEST4_MRENCLAVE: [u8; 32] =
+        hex!("7a3454ec8f42e265cb5be7dfd111e1d95ac6076ed82a0948b2e2a45cf17b62a0");
+    const TEST5_MRENCLAVE: [u8; 32] =
+        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
     // equal to TEST5!
-    const TEST6_MRENCLAVE: [u8; 32] = hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
+    const TEST6_MRENCLAVE: [u8; 32] =
+        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
     // equal to TEST6!
-    const TEST7_MRENCLAVE: [u8; 32] = hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
+    const TEST7_MRENCLAVE: [u8; 32] =
+        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
 
     // unix epoch. must be later than this
     const TEST1_TIMESTAMP: i64 = 1580587262i64;
     const TEST2_TIMESTAMP: i64 = 1581259412i64;
     const TEST3_TIMESTAMP: i64 = 1581259975i64;
-    
+
     //const CERT: &[u8] = b"0\x82\x0c\x8c0\x82\x0c2\xa0\x03\x02\x01\x02\x02\x01\x010\n\x06\x08*\x86H\xce=\x04\x03\x020\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0\x1e\x17\r190617124609Z\x17\r190915124609Z0\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\0\x04RT\x16\x16 \xef_\xd8\xe7\xc3\xb7\x03\x1d\xd6:\x1fF\xe3\xf2b!\xa9/\x8b\xd4\x82\x8f\xd1\xff[\x9c\x97\xbc\xf27\xb8,L\x8a\x01\xb0r;;\xa9\x83\xdc\x86\x9f\x1d%y\xf4;I\xe4Y\xc80'$K[\xd6\xa3\x82\x0bw0\x82\x0bs0\x82\x0bo\x06\t`\x86H\x01\x86\xf8B\x01\r\x04\x82\x0b`{\"id\":\"117077750682263877593646412006783680848\",\"timestamp\":\"2019-06-17T12:46:04.002066\",\"version\":3,\"isvEnclaveQuoteStatus\":\"GROUP_OUT_OF_DATE\",\"platformInfoBlob\":\"1502006504000900000909020401800000000000000000000008000009000000020000000000000B401A355B313FC939B4F48A54349C914A32A3AE2C4871BFABF22E960C55635869FC66293A3D9B2D58ED96CA620B65D669A444C80291314EF691E896F664317CF80C\",\"isvEnclaveQuoteBody\":\"AgAAAEALAAAIAAcAAAAAAOE6wgoHKsZsnVWSrsWX9kky0kWt9K4xcan0fQ996Ct+CAj//wGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAHAAAAAAAAAFJJYIbPVot9NzRCjW2z9+k+9K8BsHQKzVMEHOR14hNbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACD1xnnferKFHD2uvYqTXdDA8iZ22kCD5xw7h38CMfOngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSVBYWIO9f2OfDtwMd1jofRuPyYiGpL4vUgo/R/1ucl7zyN7gsTIoBsHI7O6mD3IafHSV59DtJ5FnIMCckS1vW\"}|EbPFH/ThUaS/dMZoDKC5EgmdUXUORFtQzF49Umi1P55oeESreJaUvmA0sg/ATSTn5t2e+e6ZoBQIUbLHjcWLMLzK4pJJUeHhok7EfVgoQ378i+eGR9v7ICNDGX7a1rroOe0s1OKxwo/0hid2KWvtAUBvf1BDkqlHy025IOiXWhXFLkb/qQwUZDWzrV4dooMfX5hfqJPi1q9s18SsdLPmhrGBheh9keazeCR9hiLhRO9TbnVgR9zJk43SPXW+pHkbNigW+2STpVAi5ugWaSwBOdK11ZjaEU1paVIpxQnlW1D6dj1Zc3LibMH+ly9ZGrbYtuJks4eRnjPhroPXxlJWpQ==|MIIEoTCCAwmgAwIBAgIJANEHdl0yo7CWMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGjAYBgNVBAoMEUludGVsIENvcnBvcmF0aW9uMTAwLgYDVQQDDCdJbnRlbCBTR1ggQXR0ZXN0YXRpb24gUmVwb3J0IFNpZ25pbmcgQ0EwHhcNMTYxMTIyMDkzNjU4WhcNMjYxMTIwMDkzNjU4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAcMC1NhbnRhIENsYXJhMRowGAYDVQQKDBFJbnRlbCBDb3Jwb3JhdGlvbjEtMCsGA1UEAwwkSW50ZWwgU0dYIEF0dGVzdGF0aW9uIFJlcG9ydCBTaWduaW5nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqXot4OZuphR8nudFrAFiaGxxkgma/Es/BA+tbeCTUR106AL1ENcWA4FX3K+E9BBL0/7X5rj5nIgX/R/1ubhkKWw9gfqPG3KeAtIdcv/uTO1yXv50vqaPvE1CRChvzdS/ZEBqQ5oVvLTPZ3VEicQjlytKgN9cLnxbwtuvLUK7eyRPfJW/ksddOzP8VBBniolYnRCD2jrMRZ8nBM2ZWYwnXnwYeOAHV+W9tOhAImwRwKF/95yAsVwd21ryHMJBcGH70qLagZ7Ttyt++qO/6+KAXJuKwZqjRlEtSEz8gZQeFfVYgcwSfo96oSMAzVr7V0L6HSDLRnpb6xxmbPdqNol4tQIDAQABo4GkMIGhMB8GA1UdIwQYMBaAFHhDe3amfrzQr35CN+s1fDuHAVE8MA4GA1UdDwEB/wQEAwIGwDAMBgNVHRMBAf8EAjAAMGAGA1UdHwRZMFcwVaBToFGGT2h0dHA6Ly90cnVzdGVkc2VydmljZXMuaW50ZWwuY29tL2NvbnRlbnQvQ1JML1NHWC9BdHRlc3RhdGlvblJlcG9ydFNpZ25pbmdDQS5jcmwwDQYJKoZIhvcNAQELBQADggGBAGcIthtcK9IVRz4rRq+ZKE+7k50/OxUsmW8aavOzKb0iCx07YQ9rzi5nU73tME2yGRLzhSViFs/LpFa9lpQL6JL1aQwmDR74TxYGBAIi5f4I5TJoCCEqRHz91kpG6Uvyn2tLmnIdJbPE4vYvWLrtXXfFBSSPD4Afn7+3/XUggAlc7oCTizOfbbtOFlYA4g5KcYgS1J2ZAeMQqbUdZseZCcaZZZn65tdqee8UXZlDvx0+NdO0LR+5pFy+juM0wWbu59MvzcmTXbjsi7HY6zd53Yq5K244fwFHRQ8eOB0IWB+4PfM7FeAApZvlfqlKOlLcZL2uyVmzRkyR5yW72uo9mehX44CiPJ2fse9Y6eQtcfEhMPkmHXI01sN+KwPbpA39+xOsStjhP9N1Y1a2tQAVo+yVgLgV2Hws73Fc0o3wC78qPEA+v2aRs/Be3ZFDgDyghc/1fgU+7C+P6kbqd4poyb6IW8KCJbxfMJvkordNOgOUUxndPHEi/tb/U7uLjLOgPA==0\n\x06\x08*\x86H\xce=\x04\x03\x02\x03H\00E\x02!\0\xae6\x06\t@Sy\x8f\x8ec\x9d\xdci^Ex*\x92}\xdcG\x15A\x97\xd7\xd7\xd1\xccx\xe0\x1e\x08\x02 \x15Q\xa0BT\xde'~\xec\xbd\x027\xd3\xd8\x83\xf7\xe6Z\xc5H\xb4D\xf7\xe2\r\xa7\xe4^f\x10\x85p";
     const CERT_FAKE_QUOTE_STATUS: &[u8] = b"0\x82\x0c\x8c0\x82\x0c2\xa0\x03\x02\x01\x02\x02\x01\x010\n\x06\x08*\x86H\xce=\x04\x03\x020\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0\x1e\x17\r190617124609Z\x17\r190915124609Z0\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\0\x04RT\x16\x16 \xef_\xd8\xe7\xc3\xb7\x03\x1d\xd6:\x1fF\xe3\xf2b!\xa9/\x8b\xd4\x82\x8f\xd1\xff[\x9c\x97\xbc\xf27\xb8,L\x8a\x01\xb0r;;\xa9\x83\xdc\x86\x9f\x1d%y\xf4;I\xe4Y\xc80'$K[\xd6\xa3\x82\x0bw0\x82\x0bs0\x82\x0bo\x06\t`\x86H\x01\x86\xf8B\x01\r\x04\x82\x0b`{\"id\":\"117077750682263877593646412006783680848\",\"timestamp\":\"2019-06-17T12:46:04.002066\",\"version\":3,\"isvEnclaveQuoteStatus\":\"OK\",\"platformInfoBlob\":\"1602006504000900000909020401800000000000000000000008000009000000020000000000000B401A355B313FC939B4F48A54349C914A32A3AE2C4871BFABF22E960C55635869FC66293A3D9B2D58ED96CA620B65D669A444C80291314EF691E896F664317CF80C\",\"isvEnclaveQuoteBody\":\"AgAAAEALAAAIAAcAAAAAAOE6wgoHKsZsnVWSrsWX9kky0kWt9K4xcan0fQ996Ct+CAj//wGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAHAAAAAAAAAFJJYIbPVot9NzRCjW2z9+k+9K8BsHQKzVMEHOR14hNbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACD1xnnferKFHD2uvYqTXdDA8iZ22kCD5xw7h38CMfOngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSVBYWIO9f2OfDtwMd1jofRuPyYiGpL4vUgo/R/1ucl7zyN7gsTIoBsHI7O6mD3IafHSV59DtJ5FnIMCckS1vW\"}|EbPFH/ThUaS/dMZoDKC5EgmdUXUORFtQzF49Umi1P55oeESreJaUvmA0sg/ATSTn5t2e+e6ZoBQIUbLHjcWLMLzK4pJJUeHhok7EfVgoQ378i+eGR9v7ICNDGX7a1rroOe0s1OKxwo/0hid2KWvtAUBvf1BDkqlHy025IOiXWhXFLkb/qQwUZDWzrV4dooMfX5hfqJPi1q9s18SsdLPmhrGBheh9keazeCR9hiLhRO9TbnVgR9zJk43SPXW+pHkbNigW+2STpVAi5ugWaSwBOdK11ZjaEU1paVIpxQnlW1D6dj1Zc3LibMH+ly9ZGrbYtuJks4eRnjPhroPXxlJWpQ==|MIIEoTCCAwmgAwIBAgIJANEHdl0yo7CWMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGjAYBgNVBAoMEUludGVsIENvcnBvcmF0aW9uMTAwLgYDVQQDDCdJbnRlbCBTR1ggQXR0ZXN0YXRpb24gUmVwb3J0IFNpZ25pbmcgQ0EwHhcNMTYxMTIyMDkzNjU4WhcNMjYxMTIwMDkzNjU4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAcMC1NhbnRhIENsYXJhMRowGAYDVQQKDBFJbnRlbCBDb3Jwb3JhdGlvbjEtMCsGA1UEAwwkSW50ZWwgU0dYIEF0dGVzdGF0aW9uIFJlcG9ydCBTaWduaW5nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqXot4OZuphR8nudFrAFiaGxxkgma/Es/BA+tbeCTUR106AL1ENcWA4FX3K+E9BBL0/7X5rj5nIgX/R/1ubhkKWw9gfqPG3KeAtIdcv/uTO1yXv50vqaPvE1CRChvzdS/ZEBqQ5oVvLTPZ3VEicQjlytKgN9cLnxbwtuvLUK7eyRPfJW/ksddOzP8VBBniolYnRCD2jrMRZ8nBM2ZWYwnXnwYeOAHV+W9tOhAImwRwKF/95yAsVwd21ryHMJBcGH70qLagZ7Ttyt++qO/6+KAXJuKwZqjRlEtSEz8gZQeFfVYgcwSfo96oSMAzVr7V0L6HSDLRnpb6xxmbPdqNol4tQIDAQABo4GkMIGhMB8GA1UdIwQYMBaAFHhDe3amfrzQr35CN+s1fDuHAVE8MA4GA1UdDwEB/wQEAwIGwDAMBgNVHRMBAf8EAjAAMGAGA1UdHwRZMFcwVaBToFGGT2h0dHA6Ly90cnVzdGVkc2VydmljZXMuaW50ZWwuY29tL2NvbnRlbnQvQ1JML1NHWC9BdHRlc3RhdGlvblJlcG9ydFNpZ25pbmdDQS5jcmwwDQYJKoZIhvcNAQELBQADggGBAGcIthtcK9IVRz4rRq+ZKE+7k50/OxUsmW8aavOzKb0iCx07YQ9rzi5nU73tME2yGRLzhSViFs/LpFa9lpQL6JL1aQwmDR74TxYGBAIi5f4I5TJoCCEqRHz91kpG6Uvyn2tLmnIdJbPE4vYvWLrtXXfFBSSPD4Afn7+3/XUggAlc7oCTizOfbbtOFlYA4g5KcYgS1J2ZAeMQqbUdZseZCcaZZZn65tdqee8UXZlDvx0+NdO0LR+5pFy+juM0wWbu59MvzcmTXbjsi7HY6zd53Yq5K244fwFHRQ8eOB0IWB+4PfM7FeAApZvlfqlKOlLcZL2uyVmzRkyR5yW72uo9mehX44CiPJ2fse9Y6eQtcfEhMPkmHXI01sN+KwPbpA39+xOsStjhP9N1Y1a2tQAVo+yVgLgV2Hws73Fc0o3wC78qPEA+v2aRs/Be3ZFDgDyghc/1fgU+7C+P6kbqd4poyb6IW8KCJbxfMJvkordNOgOUUxndPHEi/tb/U7uLjLOgPA==0\n\x06\x08*\x86H\xce=\x04\x03\x02\x03H\00E\x02!\0\xae6\x06\t@Sy\x8f\x8ec\x9d\xdci^Ex*\x92}\xdcG\x15A\x97\xd7\xd7\xd1\xccx\xe0\x1e\x08\x02 \x15Q\xa0BT\xde'~\xec\xbd\x027\xd3\xd8\x83\xf7\xe6Z\xc5H\xb4D\xf7\xe2\r\xa7\xe4^f\x10\x85p";
     const CERT_WRONG_PLATFORM_BLOB: &[u8] = b"0\x82\x0c\x8c0\x82\x0c2\xa0\x03\x02\x01\x02\x02\x01\x010\n\x06\x08*\x86H\xce=\x04\x03\x020\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0\x1e\x17\r190617124609Z\x17\r190915124609Z0\x121\x100\x0e\x06\x03U\x04\x03\x0c\x07MesaTEE0Y0\x13\x06\x07*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01\x07\x03B\0\x04RT\x16\x16 \xef_\xd8\xe7\xc3\xb7\x03\x1d\xd6:\x1fF\xe3\xf2b!\xa9/\x8b\xd4\x82\x8f\xd1\xff[\x9c\x97\xbc\xf27\xb8,L\x8a\x01\xb0r;;\xa9\x83\xdc\x86\x9f\x1d%y\xf4;I\xe4Y\xc80'$K[\xd6\xa3\x82\x0bw0\x82\x0bs0\x82\x0bo\x06\t`\x86H\x01\x86\xf8B\x01\r\x04\x82\x0b`{\"id\":\"117077750682263877593646412006783680848\",\"timestamp\":\"2019-06-17T12:46:04.002066\",\"version\":3,\"isvEnclaveQuoteStatus\":\"GROUP_OUT_OF_DATE\",\"platformInfoBlob\":\"1602006504000900000909020401800000000000000000000008000009000000020000000000000B401A355B313FC939B4F48A54349C914A32A3AE2C4871BFABF22E960C55635869FC66293A3D9B2D58ED96CA620B65D669A444C80291314EF691E896F664317CF80C\",\"isvEnclaveQuoteBody\":\"AgAAAEALAAAIAAcAAAAAAOE6wgoHKsZsnVWSrsWX9kky0kWt9K4xcan0fQ996Ct+CAj//wGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAHAAAAAAAAAFJJYIbPVot9NzRCjW2z9+k+9K8BsHQKzVMEHOR14hNbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACD1xnnferKFHD2uvYqTXdDA8iZ22kCD5xw7h38CMfOngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSVBYWIO9f2OfDtwMd1jofRuPyYiGpL4vUgo/R/1ucl7zyN7gsTIoBsHI7O6mD3IafHSV59DtJ5FnIMCckS1vW\"}|EbPFH/ThUaS/dMZoDKC5EgmdUXUORFtQzF49Umi1P55oeESreJaUvmA0sg/ATSTn5t2e+e6ZoBQIUbLHjcWLMLzK4pJJUeHhok7EfVgoQ378i+eGR9v7ICNDGX7a1rroOe0s1OKxwo/0hid2KWvtAUBvf1BDkqlHy025IOiXWhXFLkb/qQwUZDWzrV4dooMfX5hfqJPi1q9s18SsdLPmhrGBheh9keazeCR9hiLhRO9TbnVgR9zJk43SPXW+pHkbNigW+2STpVAi5ugWaSwBOdK11ZjaEU1paVIpxQnlW1D6dj1Zc3LibMH+ly9ZGrbYtuJks4eRnjPhroPXxlJWpQ==|MIIEoTCCAwmgAwIBAgIJANEHdl0yo7CWMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGjAYBgNVBAoMEUludGVsIENvcnBvcmF0aW9uMTAwLgYDVQQDDCdJbnRlbCBTR1ggQXR0ZXN0YXRpb24gUmVwb3J0IFNpZ25pbmcgQ0EwHhcNMTYxMTIyMDkzNjU4WhcNMjYxMTIwMDkzNjU4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAcMC1NhbnRhIENsYXJhMRowGAYDVQQKDBFJbnRlbCBDb3Jwb3JhdGlvbjEtMCsGA1UEAwwkSW50ZWwgU0dYIEF0dGVzdGF0aW9uIFJlcG9ydCBTaWduaW5nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqXot4OZuphR8nudFrAFiaGxxkgma/Es/BA+tbeCTUR106AL1ENcWA4FX3K+E9BBL0/7X5rj5nIgX/R/1ubhkKWw9gfqPG3KeAtIdcv/uTO1yXv50vqaPvE1CRChvzdS/ZEBqQ5oVvLTPZ3VEicQjlytKgN9cLnxbwtuvLUK7eyRPfJW/ksddOzP8VBBniolYnRCD2jrMRZ8nBM2ZWYwnXnwYeOAHV+W9tOhAImwRwKF/95yAsVwd21ryHMJBcGH70qLagZ7Ttyt++qO/6+KAXJuKwZqjRlEtSEz8gZQeFfVYgcwSfo96oSMAzVr7V0L6HSDLRnpb6xxmbPdqNol4tQIDAQABo4GkMIGhMB8GA1UdIwQYMBaAFHhDe3amfrzQr35CN+s1fDuHAVE8MA4GA1UdDwEB/wQEAwIGwDAMBgNVHRMBAf8EAjAAMGAGA1UdHwRZMFcwVaBToFGGT2h0dHA6Ly90cnVzdGVkc2VydmljZXMuaW50ZWwuY29tL2NvbnRlbnQvQ1JML1NHWC9BdHRlc3RhdGlvblJlcG9ydFNpZ25pbmdDQS5jcmwwDQYJKoZIhvcNAQELBQADggGBAGcIthtcK9IVRz4rRq+ZKE+7k50/OxUsmW8aavOzKb0iCx07YQ9rzi5nU73tME2yGRLzhSViFs/LpFa9lpQL6JL1aQwmDR74TxYGBAIi5f4I5TJoCCEqRHz91kpG6Uvyn2tLmnIdJbPE4vYvWLrtXXfFBSSPD4Afn7+3/XUggAlc7oCTizOfbbtOFlYA4g5KcYgS1J2ZAeMQqbUdZseZCcaZZZn65tdqee8UXZlDvx0+NdO0LR+5pFy+juM0wWbu59MvzcmTXbjsi7HY6zd53Yq5K244fwFHRQ8eOB0IWB+4PfM7FeAApZvlfqlKOlLcZL2uyVmzRkyR5yW72uo9mehX44CiPJ2fse9Y6eQtcfEhMPkmHXI01sN+KwPbpA39+xOsStjhP9N1Y1a2tQAVo+yVgLgV2Hws73Fc0o3wC78qPEA+v2aRs/Be3ZFDgDyghc/1fgU+7C+P6kbqd4poyb6IW8KCJbxfMJvkordNOgOUUxndPHEi/tb/U7uLjLOgPA==0\n\x06\x08*\x86H\xce=\x04\x03\x02\x03H\00E\x02!\0\xae6\x06\t@Sy\x8f\x8ec\x9d\xdci^Ex*\x92}\xdcG\x15A\x97\xd7\xd7\xd1\xccx\xe0\x1e\x08\x02 \x15Q\xa0BT\xde'~\xec\xbd\x027\xd3\xd8\x83\xf7\xe6Z\xc5H\xb4D\xf7\xe2\r\xa7\xe4^f\x10\x85p";
@@ -443,7 +451,7 @@ mod tests {
         let report = verify_ias_report(TEST4_CERT);
         let report = report.unwrap();
         assert_eq!(report.mr_enclave, TEST4_MRENCLAVE);
-        assert!(report.timestamp >= TEST1_TIMESTAMP); 
+        assert!(report.timestamp >= TEST1_TIMESTAMP);
         assert_eq!(report.pubkey, TEST4_SIGNER_PUB);
         //assert_eq!(report.status, SgxStatus::GroupOutOfDate);
         assert_eq!(report.status, SgxStatus::ConfigurationNeeded);
