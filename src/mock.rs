@@ -42,23 +42,61 @@ impl system::Trait for TestRuntime {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type ModuleToIndex = ();
-    type AccountData = ();
+    type AccountData = balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
 }
+
+pub type Balance = u64;
+
+parameter_types! {
+    pub const ExistentialDeposit: u64 = 500;
+}
+
+impl balances::Trait for TestRuntime {
+    type Balance = Balance;
+    type Event = TestEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+}
+
+parameter_types! {
+        pub const MinimumPeriod: u64 = 6000 / 2;
+}
+
+pub type Moment = u64;
+
+impl timestamp::Trait for TestRuntime {
+    type Moment = Moment;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+}
+
+parameter_types! {
+    pub const MomentsPerDay: u64 = 86_400_000; // [ms/d]
+}
+
 impl Trait for TestRuntime {
     type Event = TestEvent;
+    type Currency = Balances;
+    type MomentsPerDay = MomentsPerDay;
 }
 
 // Easy access alias
 pub type Registry = Module<TestRuntime>;
 pub type System = system::Module<TestRuntime>;
+pub type Balances = balances::Module<TestRuntime>;
+pub type Timestamp = timestamp::Module<TestRuntime>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let mut t = system::GenesisConfig::default()
         .build_storage::<TestRuntime>()
+        .unwrap();
+    balances::GenesisConfig::<TestRuntime> { balances: vec![] }
+        .assimilate_storage(&mut t)
         .unwrap();
     let mut ext: sp_io::TestExternalities = t.into();
     ext.execute_with(|| System::set_block_number(1));
@@ -78,5 +116,6 @@ impl_outer_event! {
     pub enum TestEvent for TestRuntime {
         registry<T>,
         system<T>,
+        balances<T>,
     }
 }
