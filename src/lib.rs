@@ -262,11 +262,11 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
-        if <timestamp::Module<T>>::get()
+        let elapsed_time = <timestamp::Module<T>>::get()
             .checked_sub(&T::Moment::saturated_from(report_timestamp.into()))
-            .ok_or("Underflow while calculating elapsed time since report creation")?
-            < T::MomentsPerDay::get()
-        {
+            .ok_or("Underflow while calculating elapsed time since report creation")?;
+
+        if elapsed_time < T::MomentsPerDay::get() {
             Ok(())
         } else {
             Err(<Error<T>>::RemoteAttestationTooOld.into())

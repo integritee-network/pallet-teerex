@@ -75,7 +75,7 @@ fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
 #[test]
 fn add_enclave_works() {
     new_test_ext().execute_with(|| {
-        // set the now in the runtime such that the remote attestation reports are withing accepted range (24h)
+        // set the now in the runtime such that the remote attestation reports are within accepted range (24h)
         Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         assert_ok!(Registry::register_enclave(
@@ -230,7 +230,7 @@ fn register_enclave_with_to_old_attestation_report_fails() {
 #[test]
 fn update_enclave_url_works() {
     new_test_ext().execute_with(|| {
-        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
 
         let signer = get_signer(TEST4_SIGNER_PUB);
         let url2 = "my fancy url".as_bytes();
@@ -262,7 +262,7 @@ fn update_enclave_url_works() {
 #[test]
 fn update_ipfs_hash_works() {
     new_test_ext().execute_with(|| {
-        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
 
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
         let shard = H256::default();
