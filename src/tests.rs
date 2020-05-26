@@ -15,12 +15,14 @@
 
 */
 use super::*;
+use crate::mock::AccountId;
 use crate::mock::*;
 use codec::Decode;
 use frame_support::{assert_ok, IterableStorageMap};
 use hex_literal::hex;
 use sp_core::{sr25519, H256};
 use sp_runtime::traits::IdentifyAccount;
+use sp_runtime::DispatchError;
 
 // reproduce with "substratee_worker dump_ra"
 const TEST4_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST4.der");
@@ -51,10 +53,12 @@ const TEST7_MRENCLAVE: [u8; 32] =
     hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
 
 // unix epoch. must be later than this
-const TEST4_TIMESTAMP: i64 = 1587899785i64;
-const TEST5_TIMESTAMP: i64 = 1587900013i64;
-const TEST6_TIMESTAMP: i64 = 1587900233i64;
-const TEST7_TIMESTAMP: i64 = 1587900450i64;
+const TEST4_TIMESTAMP: u64 = 1587899785;
+const TEST5_TIMESTAMP: u64 = 1587900013;
+const TEST6_TIMESTAMP: u64 = 1587900233;
+const TEST7_TIMESTAMP: u64 = 1587900450;
+
+const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
 
 const URL: &[u8] = &[
     119, 115, 58, 47, 47, 49, 50, 55, 46, 48, 46, 48, 46, 49, 58, 57, 57, 57, 49,
@@ -71,6 +75,8 @@ fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
 #[test]
 fn add_enclave_works() {
     new_test_ext().execute_with(|| {
+        // set the now in the runtime such that the remote attestation reports are withing accepted range (24h)
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         assert_ok!(Registry::register_enclave(
             Origin::signed(signer),
@@ -84,6 +90,7 @@ fn add_enclave_works() {
 #[test]
 fn add_and_remove_enclave_works() {
     new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         assert_ok!(Registry::register_enclave(
             Origin::signed(signer.clone()),
@@ -100,6 +107,7 @@ fn add_and_remove_enclave_works() {
 #[test]
 fn list_enclaves_works() {
     new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         let _e_1: Enclave<AccountId, Vec<u8>> = Enclave {
             pubkey: signer.clone(),
@@ -121,6 +129,9 @@ fn list_enclaves_works() {
 #[test]
 fn remove_middle_enclave_works() {
     new_test_ext().execute_with(|| {
+        // use the newest timestamp, is as now such that all reports are valid
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+
         let signer5 = get_signer(TEST5_SIGNER_PUB);
         let signer6 = get_signer(TEST6_SIGNER_PUB);
         let signer7 = get_signer(TEST7_SIGNER_PUB);
@@ -191,18 +202,36 @@ fn remove_middle_enclave_works() {
 fn register_enclave_with_different_signer_fails() {
     new_test_ext().execute_with(|| {
         let signer = get_signer(TEST7_SIGNER_PUB);
-        assert!(Registry::register_enclave(
-            Origin::signed(signer),
-            TEST5_CERT.to_vec(),
-            URL.to_vec()
-        )
-        .is_err());
+        assert_eq!(
+            Registry::register_enclave(Origin::signed(signer), TEST5_CERT.to_vec(), URL.to_vec()),
+            Err(DispatchError::Other(
+                "extrinsic must be signed by attested enclave key"
+            ))
+        );
+    })
+}
+
+#[test]
+fn register_enclave_with_to_old_attestation_report_fails() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP + TWENTY_FOUR_HOURS + 1);
+        let signer = get_signer(TEST7_SIGNER_PUB);
+        assert_eq!(
+            Registry::register_enclave(Origin::signed(signer), TEST7_CERT.to_vec(), URL.to_vec(),),
+            Err(DispatchError::Module {
+                index: 0,
+                error: 2,
+                message: Some(Error::<TestRuntime>::RemoteAttestationTooOld.into())
+            })
+        );
     })
 }
 
 #[test]
 fn update_enclave_url_works() {
     new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+
         let signer = get_signer(TEST4_SIGNER_PUB);
         let url2 = "my fancy url".as_bytes();
         let _e_1: Enclave<AccountId, Vec<u8>> = Enclave {
@@ -233,6 +262,8 @@ fn update_enclave_url_works() {
 #[test]
 fn update_ipfs_hash_works() {
     new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
         let shard = H256::default();
         let request_hash = vec![];

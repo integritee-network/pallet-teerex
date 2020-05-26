@@ -18,6 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use chrono::prelude::*;
+use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 //use itertools::Itertools;
 //use log::*;
@@ -95,7 +96,7 @@ pub struct SgxReport {
     pub mr_enclave: [u8; 32],
     pub pubkey: [u8; 32],
     pub status: SgxStatus,
-    pub timestamp: i64,
+    pub timestamp: u64,
 }
 
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
@@ -294,9 +295,7 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
         Err(_) => return Err("RA report parsing error"),
     };
 
-    // get timestamp
-    // TODO: do later in runtime: Check timestamp is within 24H (90day is recommended by Intel)
-    let ra_timestamp = match &attn_report["timestamp"] {
+    let _ra_timestamp = match &attn_report["timestamp"] {
         Value::String(time) => {
             let time_fixed = time.clone() + "+0000";
             match DateTime::parse_from_str(&time_fixed, "%Y-%m-%dT%H:%M:%S%.f%z") {
@@ -306,6 +305,10 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
         }
         _ => return Err("Failed to fetch timestamp from attestation report"),
     };
+
+    let ra_timestamp: u64 = _ra_timestamp
+        .try_into()
+        .map_err(|_| "Error converting report.timestamp to u64")?;
 
     #[cfg(test)]
     println!(

@@ -42,16 +42,25 @@ version = '2.0.0-alpha.7'
 default-features = false
 version = '2.0.0-alpha.7'
 
+[dependencies.timestamp]
+default-features = false
+package = "pallet-timestamp"
+version = "2.0.0-alpha.7"
+
 [dev-dependencies]
 hex-literal = "*"
 
-[dev-dependencies.sp-runtime]
+[dependencies.sp-runtime]
 default-features = false
 version = '2.0.0-alpha.7'
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
 version = "0.8.0-alpha.7"
+
+[dev-dependencies.balances]
+package = "pallet-balances"
+version = '2.0.0-alpha.7'
 
 [features]
 default = ['std']
@@ -63,4 +72,5 @@ std = [
     'sp-std/std',    
     'sp-io/std',
     'sp-core/std',
+    'timestamp/std'
 ]

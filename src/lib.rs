@@ -22,18 +22,21 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
     dispatch::DispatchResult,
     ensure,
-    traits::{Currency, ExistenceRequirement},
+    traits::{Currency, ExistenceRequirement, Get},
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
 use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
 use sp_io::misc::print_utf8;
+use sp_runtime::traits::{CheckedSub, SaturatedConversion};
 use sp_std::prelude::*;
 use sp_std::str;
-pub trait Trait: system::Trait {
+
+pub trait Trait: system::Trait + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type Currency: Currency<<Self as system::Trait>::AccountId>;
+    type MomentsPerDay: Get<Self::Moment>;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -43,7 +46,7 @@ const MAX_URL_LEN: usize = 256;
 pub struct Enclave<PubKey, Url> {
     pub pubkey: PubKey, // FIXME: this is redundant information
     pub mr_enclave: [u8; 32],
-    pub timestamp: i64, // unix epoch
+    pub timestamp: u64, // unix epoch
     pub url: Url,       // utf8 encoded url
 }
 
@@ -93,9 +96,7 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
         type Error = Error<T>;
-
         fn deposit_event() = default;
 
         // the substraTEE-worker wants to register his enclave
@@ -122,6 +123,8 @@ decl_module! {
 //                    ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
 //                        "RA status is insufficient");
 //                    print_utf8(b"substraTEE_registry: status is acceptable");
+                    Self::ensure_timestamp_within_24_hours(report.timestamp)?;
+
                     Self::register_verified_enclave(&sender, &report, worker_url.clone())?;
                     Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
                     print_utf8(b"substraTEE_registry: enclave registered");
@@ -171,7 +174,6 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn shield_funds(origin, incognito_account_encrypted: Vec<u8>, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            // Todo verify shard
             T::Currency::transfer(&sender, &bonding_account, amount, ExistenceRequirement::AllowDeath)?;
             Self::deposit_event(RawEvent::ShieldFunds(incognito_account_encrypted));
             Ok(())
@@ -181,7 +183,6 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, shard: T::AccountId) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
-            // Todo: Verify shard
             T::Currency::transfer(&shard, &public_account, amount, ExistenceRequirement::AllowDeath)?;
             Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
             Ok(())
@@ -194,7 +195,8 @@ decl_error! {
         // failed to decode enclave signer
         EnclaveSignerDecodeError,
         // Verifying RA report failed
-        RemoteAttestationVerificationFailed
+        RemoteAttestationVerificationFailed,
+        RemoteAttestationTooOld
     }
 }
 
@@ -257,6 +259,18 @@ impl<T: Trait> Module<T> {
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
 
         Ok(())
+    }
+
+    fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
+        if <timestamp::Module<T>>::get()
+            .checked_sub(&T::Moment::saturated_from(report_timestamp.into()))
+            .ok_or("Underflow while calculating elapsed time since report creation")?
+            < T::MomentsPerDay::get()
+        {
+            Ok(())
+        } else {
+            Err(<Error<T>>::RemoteAttestationTooOld.into())
+        }
     }
 }
 
