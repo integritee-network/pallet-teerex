@@ -181,9 +181,9 @@ decl_module! {
 
         /// Sent by enclaves only as a result of an `unshield` request from a client to an enclave.
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
-        pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, shard: T::AccountId) -> DispatchResult {
+        pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
-            T::Currency::transfer(&shard, &public_account, amount, ExistenceRequirement::AllowDeath)?;
+            T::Currency::transfer(&bonding_account, &public_account, amount, ExistenceRequirement::AllowDeath)?;
             Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
             Ok(())
         }
