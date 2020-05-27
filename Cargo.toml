@@ -50,7 +50,6 @@ version = "2.0.0-alpha.7"
 [dev-dependencies]
 hex-literal = "*"
 env_logger = "0.7.1"
-log = "0.4.8"
 
 [dependencies.sp-runtime]
 default-features = false
