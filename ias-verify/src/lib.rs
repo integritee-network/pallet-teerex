@@ -96,7 +96,7 @@ pub struct SgxReport {
     pub mr_enclave: [u8; 32],
     pub pubkey: [u8; 32],
     pub status: SgxStatus,
-    pub timestamp: u64,
+    pub timestamp: u64, // unix timestamp in milliseconds
 }
 
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
@@ -306,7 +306,8 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
         _ => return Err("Failed to fetch timestamp from attestation report"),
     };
 
-    let ra_timestamp: u64 = _ra_timestamp
+    // in milliseconds
+    let ra_timestamp: u64 = (_ra_timestamp * 1000)
         .try_into()
         .map_err(|_| "Error converting report.timestamp to u64")?;
 
