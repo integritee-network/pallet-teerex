@@ -46,7 +46,7 @@ const MAX_URL_LEN: usize = 256;
 pub struct Enclave<PubKey, Url> {
     pub pubkey: PubKey, // FIXME: this is redundant information
     pub mr_enclave: [u8; 32],
-    pub timestamp: u64, // unix epoch
+    pub timestamp: u64, // unix epoch in milliseconds
     pub url: Url,       // utf8 encoded url
 }
 

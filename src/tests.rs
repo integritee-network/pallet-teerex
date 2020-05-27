@@ -53,10 +53,10 @@ const TEST7_MRENCLAVE: [u8; 32] =
     hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
 
 // unix epoch. must be later than this
-const TEST4_TIMESTAMP: u64 = 1587899785;
-const TEST5_TIMESTAMP: u64 = 1587900013;
-const TEST6_TIMESTAMP: u64 = 1587900233;
-const TEST7_TIMESTAMP: u64 = 1587900450;
+const TEST4_TIMESTAMP: u64 = 1587899785000;
+const TEST5_TIMESTAMP: u64 = 1587900013000;
+const TEST6_TIMESTAMP: u64 = 1587900233000;
+const TEST7_TIMESTAMP: u64 = 1587900450000;
 
 const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
 
@@ -90,6 +90,7 @@ fn add_enclave_works() {
 #[test]
 fn add_and_remove_enclave_works() {
     new_test_ext().execute_with(|| {
+        let _ = env_logger::init();
         Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         assert_ok!(Registry::register_enclave(
@@ -224,6 +225,19 @@ fn register_enclave_with_to_old_attestation_report_fails() {
                 message: Some(Error::<TestRuntime>::RemoteAttestationTooOld.into())
             })
         );
+    })
+}
+
+#[test]
+fn register_enclave_with_almost_too_old_report_works() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP + TWENTY_FOUR_HOURS - 1);
+        let signer = get_signer(TEST7_SIGNER_PUB);
+        assert_ok!(Registry::register_enclave(
+            Origin::signed(signer),
+            TEST7_CERT.to_vec(),
+            URL.to_vec()
+        ));
     })
 }
 
