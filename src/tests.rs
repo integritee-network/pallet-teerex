@@ -21,6 +21,7 @@ use codec::Decode;
 use frame_support::{assert_ok, IterableStorageMap};
 use hex_literal::hex;
 use sp_core::{sr25519, H256};
+use sp_keyring::AccountKeyring;
 use sp_runtime::traits::IdentifyAccount;
 use sp_runtime::DispatchError;
 
@@ -280,7 +281,7 @@ fn update_ipfs_hash_works() {
 
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
         let shard = H256::default();
-        let request_hash = vec![];
+        let request_hash = H256::default();
         let signer = get_signer(TEST4_SIGNER_PUB);
 
         assert_ok!(Registry::register_enclave(
@@ -296,8 +297,8 @@ fn update_ipfs_hash_works() {
             ipfs_hash.as_bytes().to_vec()
         ));
         assert_eq!(
-            str::from_utf8(&Registry::latest_ipfs_hash(shard.clone())).unwrap(),
-            ipfs_hash
+            Registry::latest_ipfs_hash(shard.clone()),
+            ipfs_hash.as_bytes().to_vec()
         );
         assert_eq!(Registry::worker_for_shard(shard.clone()), 1u64);
 
@@ -322,7 +323,7 @@ fn ipfs_update_from_unregistered_enclave_fails() {
         assert!(Registry::confirm_call(
             Origin::signed(signer),
             H256::default(),
-            vec![],
+            H256::default(),
             ipfs_hash.as_bytes().to_vec()
         )
         .is_err());
@@ -342,5 +343,46 @@ fn call_worker_works() {
         let expected_event = TestEvent::registry(RawEvent::Forwarded(req));
         println!("events:{:?}", System::events());
         assert!(System::events().iter().any(|a| a.event == expected_event));
+    })
+}
+
+#[test]
+fn unshield_is_only_executed_once_for_the_same_call_hash() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
+        let signer = get_signer(TEST4_SIGNER_PUB);
+        let call_hash: H256 = H256::from([1u8; 32]);
+
+        assert_ok!(Registry::register_enclave(
+            Origin::signed(signer.clone()),
+            TEST4_CERT.to_vec(),
+            URL.to_vec()
+        ));
+
+        assert_ok!(Balances::transfer(
+            Origin::signed(AccountKeyring::Alice.public()),
+            signer,
+            1 << 50
+        ));
+
+        assert!(Registry::unshield_funds(
+            Origin::signed(signer),
+            AccountKeyring::Alice.public(),
+            50,
+            signer,
+            call_hash.clone()
+        )
+        .is_ok());
+
+        assert!(Registry::unshield_funds(
+            Origin::signed(signer),
+            AccountKeyring::Alice.public(),
+            50,
+            signer,
+            call_hash.clone()
+        )
+        .is_ok());
+
+        assert_eq!(<ConfirmedCalls>::get(call_hash), 2)
     })
 }

@@ -73,7 +73,7 @@ decl_event!(
 		Forwarded(Request),
 		ShieldFunds(Vec<u8>),
 		UnshieldedFunds(AccountId),
-		CallConfirmed(AccountId, Vec<u8>),
+		CallConfirmed(AccountId, H256),
 	}
 );
 
@@ -91,6 +91,7 @@ decl_storage! {
         pub LatestIpfsHash get(fn latest_ipfs_hash) : map hasher(blake2_128_concat) ShardIdentifier => Vec<u8>;
         // enclave index of the worker that recently committed an update
         pub WorkerForShard get(fn worker_for_shard) : map hasher(blake2_128_concat) ShardIdentifier => u64;
+        pub ConfirmedCalls get(fn confirmed_calls): map hasher(blake2_128_concat) H256 => u64;
     }
 }
 
@@ -155,7 +156,7 @@ decl_module! {
 
         // the substraTEE-worker calls this function for every processed call to confirm a state update
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
-        pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: Vec<u8>, ipfs_hash: Vec<u8>) -> DispatchResult {
+        pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
             "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
@@ -181,10 +182,20 @@ decl_module! {
 
         /// Sent by enclaves only as a result of an `unshield` request from a client to an enclave.
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
-        pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
-            let _sender = ensure_signed(origin)?;
-            T::Currency::transfer(&bonding_account, &public_account, amount, ExistenceRequirement::AllowDeath)?;
-            Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
+        pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            ensure!(<EnclaveIndex<T>>::contains_key(&sender),
+            "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
+
+            if !<ConfirmedCalls>::contains_key(call_hash) {
+                native::info!("First confirmation for call: {:?}", call_hash);
+                T::Currency::transfer(&bonding_account, &public_account, amount, ExistenceRequirement::AllowDeath)?;
+                <ConfirmedCalls>::insert(call_hash, 0);
+                Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
+            }
+
+            <ConfirmedCalls>::mutate(call_hash, |confirmations| {*confirmations += 1 });
             Ok(())
         }
     }
