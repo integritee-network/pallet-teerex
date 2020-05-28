@@ -193,7 +193,7 @@ decl_module! {
                 T::Currency::transfer(&bonding_account, &public_account, amount, ExistenceRequirement::AllowDeath)?;
                 <ConfirmedCalls>::insert(call_hash, 0);
                 Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
-            } {
+            } else {
                 native::info!("Second confirmation for call: {:?}", call_hash);
             }
 
