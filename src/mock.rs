@@ -4,6 +4,7 @@ use crate::{Module, Trait};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::{sr25519, H256};
+use sp_keyring::AccountKeyring;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Verify},
@@ -95,9 +96,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<TestRuntime>()
         .unwrap();
-    balances::GenesisConfig::<TestRuntime> { balances: vec![] }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    balances::GenesisConfig::<TestRuntime> {
+        balances: vec![(AccountKeyring::Alice.public(), 1 << 60)],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     let mut ext: sp_io::TestExternalities = t.into();
     ext.execute_with(|| System::set_block_number(1));
     ext

@@ -1,6 +1,6 @@
 [package]
 name = "pallet-substratee-registry"
-version = "0.6.7-sub2.0.0-alpha.7"
+version = "0.6.8-sub2.0.0-alpha.7"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
@@ -50,6 +50,7 @@ version = "2.0.0-alpha.7"
 [dev-dependencies]
 hex-literal = "*"
 env_logger = "0.7.1"
+log = "*"
 
 [dependencies.sp-runtime]
 default-features = false
@@ -58,6 +59,9 @@ version = '2.0.0-alpha.7'
 [dev-dependencies.externalities]
 package = "sp-externalities"
 version = "0.8.0-alpha.7"
+
+[dev-dependencies.sp-keyring]
+version = "2.0.0-alpha.7"
 
 [dev-dependencies.balances]
 package = "pallet-balances"
