@@ -455,7 +455,7 @@ mod tests {
         let report = verify_ias_report(TEST4_CERT);
         let report = report.unwrap();
         assert_eq!(report.mr_enclave, TEST4_MRENCLAVE);
-        assert!(report.timestamp >= TEST1_TIMESTAMP);
+        assert!(report.timestamp >= TEST1_TIMESTAMP.try_into().unwrap());
         assert_eq!(report.pubkey, TEST4_SIGNER_PUB);
         //assert_eq!(report.status, SgxStatus::GroupOutOfDate);
         assert_eq!(report.status, SgxStatus::ConfigurationNeeded);
