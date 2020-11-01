@@ -1,6 +1,6 @@
 [package]
 name = "pallet-substratee-registry"
-version = "0.6.11-sub2.0.0-rc5"
+version = "0.6.12-sub2.0.0"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
@@ -23,29 +23,29 @@ path = './ias-verify'
 
 [dependencies.sp-std]
 default-features = false
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dependencies.frame-support]
 default-features = false
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dependencies.sp-io]
 default-features = false
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dependencies.sp-core]
 default-features = false
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
-version = "2.0.0-rc5"
+version = "2.0.0"
 
 [dev-dependencies]
 hex-literal = "*"
@@ -54,18 +54,18 @@ log = "*"
 
 [dependencies.sp-runtime]
 default-features = false
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
-version = "0.8.0-rc5"
+version = "0.8.0"
 
 [dev-dependencies.sp-keyring]
-version = "2.0.0-rc5"
+version = "2.0.0"
 
 [dev-dependencies.balances]
 package = "pallet-balances"
-version = '2.0.0-rc5'
+version = '2.0.0'
 
 [features]
 default = ['std']
