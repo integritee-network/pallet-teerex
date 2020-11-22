@@ -17,20 +17,24 @@ version = '1.3.0'
 
 [dependencies.frame-support]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.sp-std]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.sp-io]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 features = ["disable_panic_handler", "disable_oom"]
 
 [dependencies.sp-core]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.webpki]
 git = 'https://github.com/scs/webpki-nostd.git'

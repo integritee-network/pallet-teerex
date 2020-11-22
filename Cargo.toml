@@ -23,29 +23,35 @@ path = './ias-verify'
 
 [dependencies.sp-std]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.frame-support]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.sp-io]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.sp-core]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
-version = "2.0.0"
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dev-dependencies]
 hex-literal = "*"
@@ -54,18 +60,22 @@ log = "*"
 
 [dependencies.sp-runtime]
 default-features = false
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
-version = "0.8.0"
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dev-dependencies.sp-keyring]
-version = "2.0.0"
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [dev-dependencies.balances]
 package = "pallet-balances"
-version = '2.0.0'
+git = "https://github.com/paritytech/substrate.git" 
+rev = "a208da16"
 
 [features]
 default = ['std']
