@@ -1,6 +1,6 @@
 [package]
 name = "ias-verify"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
