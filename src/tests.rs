@@ -340,7 +340,7 @@ fn call_worker_works() {
         // don't care who signs
         let signer = get_signer(TEST4_SIGNER_PUB);
         assert!(Registry::call_worker(Origin::signed(signer), req.clone()).is_ok());
-        let expected_event = TestEvent::registry(RawEvent::Forwarded(req));
+        let expected_event = TestEvent::registry(RawEvent::Forwarded(req.shard));
         println!("events:{:?}", System::events());
         assert!(System::events().iter().any(|a| a.event == expected_event));
     })

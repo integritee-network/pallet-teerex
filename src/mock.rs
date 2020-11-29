@@ -44,11 +44,11 @@ impl system::Trait for TestRuntime {
     type MaximumExtrinsicWeight = MaximumBlockWeight;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
     type AccountData = balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type PalletInfo = ();
 }
 
 pub type Balance = u64;
@@ -63,6 +63,7 @@ impl balances::Trait for TestRuntime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type MaxLocks = ();
     type WeightInfo = ();
 }
 
