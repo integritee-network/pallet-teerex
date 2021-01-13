@@ -1,6 +1,6 @@
 // Creating mock runtime here
 
-use crate::{Module, Trait};
+use crate::{Module, Config};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::{sr25519, H256};
@@ -23,7 +23,7 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
 }
-impl system::Trait for TestRuntime {
+impl system::Config for TestRuntime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -36,19 +36,16 @@ impl system::Trait for TestRuntime {
     type Header = Header;
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type MaximumExtrinsicWeight = MaximumBlockWeight;
-    type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type AccountData = balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type PalletInfo = ();
+    type BlockWeights = ();
+    type BlockLength = ();
+    type SS58Prefix = ();       
 }
 
 pub type Balance = u64;
@@ -57,7 +54,7 @@ parameter_types! {
     pub const ExistentialDeposit: u64 = 500;
 }
 
-impl balances::Trait for TestRuntime {
+impl balances::Config for TestRuntime {
     type Balance = Balance;
     type Event = TestEvent;
     type DustRemoval = ();
@@ -73,7 +70,7 @@ parameter_types! {
 
 pub type Moment = u64;
 
-impl timestamp::Trait for TestRuntime {
+impl timestamp::Config for TestRuntime {
     type Moment = Moment;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -84,7 +81,7 @@ parameter_types! {
     pub const MomentsPerDay: u64 = 86_400_000; // [ms/d]
 }
 
-impl Trait for TestRuntime {
+impl Config for TestRuntime {
     type Event = TestEvent;
     type Currency = Balances;
     type MomentsPerDay = MomentsPerDay;

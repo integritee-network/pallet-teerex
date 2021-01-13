@@ -32,9 +32,9 @@ use sp_runtime::traits::{CheckedSub, SaturatedConversion};
 use sp_std::prelude::*;
 use sp_std::str;
 
-pub trait Trait: system::Trait + timestamp::Trait {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-    type Currency: Currency<<Self as system::Trait>::AccountId>;
+pub trait Config: system::Config + timestamp::Config {
+    type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
+    type Currency: Currency<<Self as system::Config>::AccountId>;
     type MomentsPerDay: Get<Self::Moment>;
 }
 
@@ -52,8 +52,8 @@ pub struct Enclave<PubKey, Url> {
 pub type ShardIdentifier = H256;
 
 // Disambiguate associated types
-pub type AccountId<T> = <T as frame_system::Trait>::AccountId;
-pub type BalanceOf<T> = <<T as Trait>::Currency as Currency<AccountId<T>>>::Balance;
+pub type AccountId<T> = <T as frame_system::Config>::AccountId;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountId<T>>>::Balance;
 
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, sp_core::RuntimeDebug)]
 pub struct Request {
@@ -64,7 +64,7 @@ pub struct Request {
 decl_event!(
 	pub enum Event<T>
 	where
-		<T as system::Trait>::AccountId,
+		<T as system::Config>::AccountId,
 	{
 		AddedEnclave(AccountId, Vec<u8>),
 		RemovedEnclave(AccountId),
@@ -77,7 +77,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait> as SubstrateeRegistry {
+    trait Store for Module<T: Config> as SubstrateeRegistry {
         // Simple lists are not supported in runtime modules as theoretically O(n)
         // operations can be executed while only being charged O(1), see substrate
         // Kitties tutorial Chapter 2, Tracking all Kitties.
@@ -95,7 +95,7 @@ decl_storage! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         type Error = Error<T>;
         fn deposit_event() = default;
 
@@ -207,7 +207,7 @@ decl_module! {
 }
 
 decl_error! {
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         // failed to decode enclave signer
         EnclaveSignerDecodeError,
         // Verifying RA report failed
@@ -216,7 +216,7 @@ decl_error! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     fn register_verified_enclave(
         sender: &T::AccountId,
         report: &SgxReport,
