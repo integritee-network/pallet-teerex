@@ -37,9 +37,10 @@ git = "https://github.com/paritytech/substrate.git"
 rev = "a208da16"
 
 [dependencies.webpki]
-git = 'https://github.com/scs/webpki-nostd.git'
-tag = "v0.21.0-nostd"
+git = 'https://github.com/briansmith/webpki.git'
+rev = "9cf9f45"
 default_features = false
+features = ["alloc"]
 
 [dev-dependencies]
 hex-literal = "*"
