@@ -99,6 +99,7 @@ pub struct SgxReport {
     pub timestamp: u64, // unix timestamp in milliseconds
 }
 
+/*
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
 static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
     //&webpki::ECDSA_P256_SHA256,
@@ -110,9 +111,11 @@ static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
     &webpki::RSA_PKCS1_2048_8192_SHA512,
     &webpki::RSA_PKCS1_3072_8192_SHA384,
 ];
+*/
 
 //pub const IAS_REPORT_CA: &[u8] = include_bytes!("../AttestationReportSigningCACert.pem");
 
+/*
 pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTrustAnchors(&[
 	/*
 	 * -----BEGIN CERTIFICATE-----
@@ -154,7 +157,7 @@ pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTr
 	},
 
 ]);
-
+*/
 // prevents panics in case of index out of bounds
 fn safe_indexing(data: &[u8], start: usize, end: usize) -> Result<&[u8], &'static str> {
     if start > end {
@@ -246,6 +249,7 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
         Ok(c) => c,
         Err(_) => return Err("Cert Decoding Error"),
     };
+/*
     let sig_cert = match webpki::EndEntityCert::try_from(&sig_cert_dec[..]) {
         Ok(c) => c,
         Err(_) => return Err("Bad DER"),
@@ -284,7 +288,7 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
             return Err("bad signature");
         }
     }
-
+*/
     parse_report(attn_report_raw)
 }
 

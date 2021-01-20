@@ -29,18 +29,18 @@ branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
 branch = "rococo-v1"
-features = ["disable_panic_handler", "disable_oom"]
+#features = ["disable_panic_handler", "disable_oom"]
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
 branch = "rococo-v1"
 
-[dependencies.webpki]
-git = 'https://github.com/briansmith/webpki.git'
-rev = "9cf9f45"
-default_features = false
-features = ["alloc"]
+#[dependencies.webpki]
+#git = 'https://github.com/briansmith/webpki.git'
+#rev = "9cf9f45"
+#default_features = false
+#features = ["alloc"]
 
 [dev-dependencies]
 hex-literal = "*"
@@ -53,5 +53,5 @@ std = [
     'sp-std/std',
     'sp-io/std',
     'serde_json/std',
-    'webpki/std',
+    #'webpki/std',
 ]
