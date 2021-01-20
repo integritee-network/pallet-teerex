@@ -115,7 +115,7 @@ static SUPPORTED_SIG_ALGS: SignatureAlgorithms = &[
 
 //pub const IAS_REPORT_CA: &[u8] = include_bytes!("../AttestationReportSigningCACert.pem");
 
-/*
+
 pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTrustAnchors(&[
 	/*
 	 * -----BEGIN CERTIFICATE-----
@@ -157,7 +157,7 @@ pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTr
 	},
 
 ]);
-*/
+
 // prevents panics in case of index out of bounds
 fn safe_indexing(data: &[u8], start: usize, end: usize) -> Result<&[u8], &'static str> {
     if start > end {

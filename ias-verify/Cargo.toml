@@ -36,10 +36,10 @@ default-features = false
 git = "https://github.com/paritytech/substrate.git" 
 branch = "rococo-v1"
 
-#[dependencies.webpki]
-#git = 'https://github.com/briansmith/webpki.git'
-#rev = "9cf9f45"
-#default_features = false
+[dependencies.webpki]
+git = 'https://github.com/briansmith/webpki.git'
+rev = "9cf9f45"
+default_features = false
 #features = ["alloc"]
 
 [dev-dependencies]
@@ -53,5 +53,5 @@ std = [
     'sp-std/std',
     'sp-io/std',
     'serde_json/std',
-    #'webpki/std',
+    'webpki/std',
 ]
