@@ -18,12 +18,11 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage,
+    debug, decl_error, decl_event, decl_module, decl_storage,
     dispatch::DispatchResult,
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
     weights::{DispatchClass, Pays},
-    debug
 };
 use frame_system::{self as system, ensure_signed};
 use ias_verify::{verify_ias_report, SgxReport};
@@ -62,18 +61,19 @@ pub struct Request {
 }
 
 decl_event!(
-	pub enum Event<T>
-	where
-		<T as system::Config>::AccountId,
-	{
-		AddedEnclave(AccountId, Vec<u8>),
-		RemovedEnclave(AccountId),
-		UpdatedIpfsHash(ShardIdentifier, u64, Vec<u8>),
-		Forwarded(ShardIdentifier),
-		ShieldFunds(Vec<u8>),
-		UnshieldedFunds(AccountId),
-		CallConfirmed(AccountId, H256),
-	}
+    pub enum Event<T>
+    where
+        <T as system::Config>::AccountId,
+    {
+        AddedEnclave(AccountId, Vec<u8>),
+        RemovedEnclave(AccountId),
+        UpdatedIpfsHash(ShardIdentifier, u64, Vec<u8>),
+        Forwarded(ShardIdentifier),
+        ShieldFunds(Vec<u8>),
+        UnshieldedFunds(AccountId),
+        CallConfirmed(AccountId, H256),
+        BlockConfirmed(AccountId, H256),
+    }
 );
 
 decl_storage! {
@@ -91,6 +91,7 @@ decl_storage! {
         // enclave index of the worker that recently committed an update
         pub WorkerForShard get(fn worker_for_shard) : map hasher(blake2_128_concat) ShardIdentifier => u64;
         pub ConfirmedCalls get(fn confirmed_calls): map hasher(blake2_128_concat) H256 => u64;
+        //pub ConfirmedBlocks get(fn confirmed_blocks): map hasher(blake2_128_concat) H256 => u64;
     }
 }
 
@@ -151,7 +152,7 @@ decl_module! {
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
             debug::RuntimeLogger::init();
-            debug::info!("call_worker with {:?}", request);            
+            debug::info!("call_worker with {:?}", request);
             Self::deposit_event(RawEvent::Forwarded(request.shard));
             Ok(())
         }
@@ -168,6 +169,22 @@ decl_module! {
             <WorkerForShard>::insert(shard, sender_index);
             debug::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
             Self::deposit_event(RawEvent::CallConfirmed(sender, call_hash));
+            Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
+            Ok(())
+        }
+
+        // the substraTEE-worker calls this function for every processed block to confirm a state update
+        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+            debug::RuntimeLogger::init();
+            ensure!(<EnclaveIndex<T>>::contains_key(&sender),
+                "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
+            let sender_index = Self::enclave_index(&sender);
+            <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
+            <WorkerForShard>::insert(shard, sender_index);
+            debug::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
+            Self::deposit_event(RawEvent::BlockConfirmed(sender, block_hash));
             Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
             Ok(())
         }

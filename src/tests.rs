@@ -102,7 +102,9 @@ fn add_and_remove_enclave_works() {
             URL.to_vec()
         ));
         assert_eq!(SubstrateeRegistry::enclave_count(), 1);
-        assert_ok!(SubstrateeRegistry::unregister_enclave(Origin::signed(signer)));
+        assert_ok!(SubstrateeRegistry::unregister_enclave(Origin::signed(
+            signer
+        )));
         assert_eq!(SubstrateeRegistry::enclave_count(), 0);
         assert_eq!(list_enclaves(), vec![])
     })
@@ -194,7 +196,9 @@ fn remove_middle_enclave_works() {
         assert!(enclaves.contains(&(3, e_3.clone())));
 
         // remove enclave 2
-        assert_ok!(SubstrateeRegistry::unregister_enclave(Origin::signed(signer6)));
+        assert_ok!(SubstrateeRegistry::unregister_enclave(Origin::signed(
+            signer6
+        )));
         assert_eq!(SubstrateeRegistry::enclave_count(), 2);
         let enclaves = list_enclaves();
         assert!(enclaves.contains(&(1, e_1.clone())));
@@ -207,7 +211,11 @@ fn register_enclave_with_different_signer_fails() {
     new_test_ext().execute_with(|| {
         let signer = get_signer(TEST7_SIGNER_PUB);
         assert_eq!(
-            SubstrateeRegistry::register_enclave(Origin::signed(signer), TEST5_CERT.to_vec(), URL.to_vec()),
+            SubstrateeRegistry::register_enclave(
+                Origin::signed(signer),
+                TEST5_CERT.to_vec(),
+                URL.to_vec()
+            ),
             Err(DispatchError::Other(
                 "extrinsic must be signed by attested enclave key"
             ))
@@ -221,7 +229,11 @@ fn register_enclave_with_to_old_attestation_report_fails() {
         Timestamp::set_timestamp(TEST7_TIMESTAMP + TWENTY_FOUR_HOURS + 1);
         let signer = get_signer(TEST7_SIGNER_PUB);
         assert_eq!(
-            SubstrateeRegistry::register_enclave(Origin::signed(signer), TEST7_CERT.to_vec(), URL.to_vec(),),
+            SubstrateeRegistry::register_enclave(
+                Origin::signed(signer),
+                TEST7_CERT.to_vec(),
+                URL.to_vec(),
+            ),
             Err(DispatchError::Module {
                 index: 3,
                 error: 2,

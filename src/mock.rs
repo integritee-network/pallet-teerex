@@ -1,14 +1,14 @@
 // Creating mock runtime here
 use crate as substratee_registry;
-use substratee_registry::Config;
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::{sr25519, H256};
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup, Verify}
+    traits::{BlakeTwo256, IdentityLookup, Verify},
 };
+use substratee_registry::Config;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
