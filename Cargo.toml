@@ -10,12 +10,13 @@ members = [
 ]
 
 [dependencies]
+serde = { features = ['derive'], optional = true, version = '1.0.101' }
 
 [dependencies.codec]
 default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
-version = '1.3.0'
+version = '2.0.0'
 
 [dependencies.ias-verify]
 default-features = false
@@ -24,34 +25,28 @@ path = './ias-verify'
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dev-dependencies]
 hex-literal = "*"
@@ -61,25 +56,21 @@ log = "*"
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [dev-dependencies.sp-keyring]
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
-[dev-dependencies.balances]
-package = "pallet-balances"
+[dev-dependencies.pallet-balances]
 git = "https://github.com/paritytech/substrate.git" 
-rev = "a208da16"
 
 [features]
 default = ['std']
 std = [
+    'serde',
     'codec/std',
     'frame-support/std',
     'frame-system/std',
