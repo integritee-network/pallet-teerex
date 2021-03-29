@@ -26,7 +26,7 @@ git = "https://github.com/paritytech/substrate.git"
 [dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
-features = ["disable_panic_handler", "disable_oom"]
+#features = ["disable_panic_handler", "disable_oom"]
 
 [dependencies.sp-core]
 default-features = false
@@ -44,10 +44,8 @@ git = "https://github.com/paritytech/substrate.git"
 #default_features = false
 
 [dependencies.webpki]
-git = 'https://github.com/Phala-Network/phala-blockchain'
-tag = "poc3-1.2.1"
+git = 'https://github.com/Phala-Network/phala-parachain/tree/main/vendor/webpki'
 default_features = false
-
 
 [dev-dependencies]
 hex-literal = "*"

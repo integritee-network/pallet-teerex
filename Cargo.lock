@@ -1608,13 +1608,12 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.20"
+version = "0.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+checksum = "b72b84d47e8ec5a4f2872e8262b8f8256c5be1c938a7d6d3a867a3ba8f722f74"
 dependencies = [
  "cc",
  "libc",
- "once_cell",
  "spin",
  "untrusted",
  "web-sys",
@@ -2644,7 +2643,7 @@ name = "webpki"
 version = "0.21.0"
 source = "git+https://github.com/Phala-Network/phala-blockchain?tag=poc3-1.2.1#66b5526b9da6eec35f00fec9d964ea6d9af12c65"
 dependencies = [
- "ring 0.16.20",
+ "ring 0.16.16",
  "ring 0.16.9",
  "untrusted",
 ]
