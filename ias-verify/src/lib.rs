@@ -246,7 +246,8 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
         Ok(c) => c,
         Err(_) => return Err("Cert Decoding Error"),
     };
-    let sig_cert = match webpki::EndEntityCert::try_from(&sig_cert_dec[..]) {
+    //let sig_cert = match webpki::EndEntityCert::try_from(&sig_cert_dec[..]) {
+    let sig_cert = match webpki::EndEntityCert::from(&sig_cert_dec) {
         Ok(c) => c,
         Err(_) => return Err("Bad DER"),
     };

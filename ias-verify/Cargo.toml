@@ -17,26 +17,31 @@ version = '2.0.0'
 
 [dependencies.frame-support]
 default-features = false
-git = "https://github.com/paritytech/substrate.git" 
+git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-std]
 default-features = false
-git = "https://github.com/paritytech/substrate.git" 
+git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-io]
 default-features = false
-git = "https://github.com/paritytech/substrate.git" 
+git = "https://github.com/paritytech/substrate.git"
 features = ["disable_panic_handler", "disable_oom"]
 
 [dependencies.sp-core]
 default-features = false
-git = "https://github.com/paritytech/substrate.git" 
+git = "https://github.com/paritytech/substrate.git"
+
+#[dependencies.webpki]
+#git = 'https://github.com/briansmith/webpki.git'
+#rev = "9cf9f45"
+#default_features = false
+#features = ["alloc"]
 
 [dependencies.webpki]
-git = 'https://github.com/briansmith/webpki.git'
-rev = "9cf9f45"
+git = 'https://github.com/scs/webpki-nostd.git'
+tag = "v0.21.0-nostd"
 default_features = false
-features = ["alloc"]
 
 [dev-dependencies]
 hex-literal = "*"

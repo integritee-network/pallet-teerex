@@ -1169,7 +1169,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-substratee-registry"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
  "env_logger",
  "frame-support",
@@ -1586,16 +1586,13 @@ checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 
 [[package]]
 name = "ring"
-version = "0.16.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+version = "0.16.9"
+source = "git+https://github.com/scs/webpki-nostd.git?tag=v0.21.0-nostd#5e613193f4ee8b9e5159958ea6658efda3d0fe3b"
 dependencies = [
  "cc",
  "libc",
- "once_cell",
  "spin",
  "untrusted",
- "web-sys",
  "winapi",
 ]
 
@@ -2619,8 +2616,8 @@ dependencies = [
 
 [[package]]
 name = "webpki"
-version = "0.21.4"
-source = "git+https://github.com/briansmith/webpki.git?rev=9cf9f45#9cf9f459233116568fd32a540e8f388fa25361d3"
+version = "0.21.0"
+source = "git+https://github.com/scs/webpki-nostd.git?tag=v0.21.0-nostd#5e613193f4ee8b9e5159958ea6658efda3d0fe3b"
 dependencies = [
  "ring",
  "untrusted",
