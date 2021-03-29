@@ -38,10 +38,16 @@ git = "https://github.com/paritytech/substrate.git"
 #default_features = false
 #features = ["alloc"]
 
+#[dependencies.webpki]
+#git = 'https://github.com/scs/webpki-nostd.git'
+#tag = "v0.21.0-nostd"
+#default_features = false
+
 [dependencies.webpki]
-git = 'https://github.com/scs/webpki-nostd.git'
-tag = "v0.21.0-nostd"
+git = 'https://github.com/Phala-Network/phala-blockchain'
+tag = "poc3-1.2.1"
 default_features = false
+
 
 [dev-dependencies]
 hex-literal = "*"

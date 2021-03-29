@@ -430,6 +430,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6576a1755ddffd988788025e75bce9e74b018f7cc226198fe931d077911c6d7e"
 
 [[package]]
+name = "failure"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d32e9bd16cc02eae7db7ef620b392808b89f6a5e16bb3497d159c6b92a0f4f86"
+dependencies = [
+ "backtrace",
+]
+
+[[package]]
 name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1587,12 +1596,28 @@ checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 [[package]]
 name = "ring"
 version = "0.16.9"
-source = "git+https://github.com/scs/webpki-nostd.git?tag=v0.21.0-nostd#5e613193f4ee8b9e5159958ea6658efda3d0fe3b"
+source = "git+https://github.com/Phala-Network/phala-blockchain?tag=poc3-1.2.1#66b5526b9da6eec35f00fec9d964ea6d9af12c65"
 dependencies = [
  "cc",
  "libc",
  "spin",
  "untrusted",
+ "which",
+ "winapi",
+]
+
+[[package]]
+name = "ring"
+version = "0.16.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+dependencies = [
+ "cc",
+ "libc",
+ "once_cell",
+ "spin",
+ "untrusted",
+ "web-sys",
  "winapi",
 ]
 
@@ -2617,10 +2642,21 @@ dependencies = [
 [[package]]
 name = "webpki"
 version = "0.21.0"
-source = "git+https://github.com/scs/webpki-nostd.git?tag=v0.21.0-nostd#5e613193f4ee8b9e5159958ea6658efda3d0fe3b"
+source = "git+https://github.com/Phala-Network/phala-blockchain?tag=poc3-1.2.1#66b5526b9da6eec35f00fec9d964ea6d9af12c65"
 dependencies = [
- "ring",
+ "ring 0.16.20",
+ "ring 0.16.9",
  "untrusted",
+]
+
+[[package]]
+name = "which"
+version = "3.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d011071ae14a2f6671d0b74080ae0cd8ebf3a6f8c9589a2cd45f23126fe29724"
+dependencies = [
+ "failure",
+ "libc",
 ]
 
 [[package]]
