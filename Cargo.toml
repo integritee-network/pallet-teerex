@@ -11,6 +11,7 @@ members = [
 
 [dependencies]
 serde = { features = ['derive'], optional = true, version = '1.0.101' }
+log = { version = "0.4.14", default-features = false }
 
 [dependencies.codec]
 default-features = false

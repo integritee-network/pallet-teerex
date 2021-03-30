@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
-    debug, decl_error, decl_event, decl_module, decl_storage,
+    decl_error, decl_event, decl_module, decl_storage,
     dispatch::DispatchResult,
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
@@ -103,33 +103,32 @@ decl_module! {
         // the substraTEE-worker wants to register his enclave
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
-            debug::RuntimeLogger::init();
-            debug::info!("substraTEE_registry: called into runtime call register_enclave()");
+            log::info!("substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
-            debug::info!("substraTEE_registry: parameter lenght ok");
+            log::info!("substraTEE_registry: parameter lenght ok");
             match verify_ias_report(&ra_report) {
                 Ok(report) => {
-                    debug::info!("RA Report: {:?}", report);
+                    log::info!("RA Report: {:?}", report);
                     let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
                         Ok(signer) => signer,
                         Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
                     };
-                    debug::info!("substraTEE_registry: decoded signer");
+                    log::info!("substraTEE_registry: decoded signer");
                     // this is actually already implicitly tested by verify_ra_report
                     ensure!(sender == enclave_signer,
                         "extrinsic must be signed by attested enclave key");
-                    debug::info!("substraTEE_registry: signer is a match");
+                    log::info!("substraTEE_registry: signer is a match");
                     // TODO: activate state checks as soon as we've fixed our setup
 //                    ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
 //                        "RA status is insufficient");
-//                    debug::info!("substraTEE_registry: status is acceptable");
+//                    log::info!("substraTEE_registry: status is acceptable");
                     Self::ensure_timestamp_within_24_hours(report.timestamp)?;
 
                     Self::register_verified_enclave(&sender, &report, worker_url.clone())?;
                     Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-                    debug::info!("substraTEE_registry: enclave registered");
+                    log::info!("substraTEE_registry: enclave registered");
                     Ok(())
 
                 }
@@ -151,8 +150,7 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
-            debug::RuntimeLogger::init();
-            debug::info!("call_worker with {:?}", request);
+            log::info!("call_worker with {:?}", request);
             Self::deposit_event(RawEvent::Forwarded(request.shard));
             Ok(())
         }
@@ -161,13 +159,12 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            debug::RuntimeLogger::init();
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
             "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
-            debug::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
+            log::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
             Self::deposit_event(RawEvent::CallConfirmed(sender, call_hash));
             Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
             Ok(())
@@ -177,13 +174,12 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            debug::RuntimeLogger::init();
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
                 "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
-            debug::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
+            log::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
             Self::deposit_event(RawEvent::BlockConfirmed(sender, block_hash));
             Self::deposit_event(RawEvent::UpdatedIpfsHash(shard, sender_index, ipfs_hash));
             Ok(())
@@ -204,17 +200,16 @@ decl_module! {
         #[weight = (1000, DispatchClass::Operational, Pays::No)]
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            debug::RuntimeLogger::init();
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
             "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
 
             if !<ConfirmedCalls>::contains_key(call_hash) {
-                debug::info!("First confirmation for call: {:?}", call_hash);
+                log::info!("First confirmation for call: {:?}", call_hash);
                 T::Currency::transfer(&bonding_account, &public_account, amount, ExistenceRequirement::AllowDeath)?;
                 <ConfirmedCalls>::insert(call_hash, 0);
                 Self::deposit_event(RawEvent::UnshieldedFunds(public_account));
             } else {
-                debug::info!("Second confirmation for call: {:?}", call_hash);
+                log::info!("Second confirmation for call: {:?}", call_hash);
             }
 
             <ConfirmedCalls>::mutate(call_hash, |confirmations| {*confirmations += 1 });
@@ -239,7 +234,6 @@ impl<T: Config> Module<T> {
         report: &SgxReport,
         url: Vec<u8>,
     ) -> DispatchResult {
-        debug::RuntimeLogger::init();
         let enclave = Enclave {
             pubkey: sender.clone(),
             mr_enclave: report.mr_enclave,
@@ -247,7 +241,7 @@ impl<T: Config> Module<T> {
             url,
         };
         let enclave_idx = if <EnclaveIndex<T>>::contains_key(sender) {
-            debug::info!("Updating already registered enclave");
+            log::info!("Updating already registered enclave");
             <EnclaveIndex<T>>::get(sender)
         } else {
             let enclaves_count = Self::enclave_count()
