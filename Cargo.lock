@@ -828,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "ias-verify"
-version = "0.1.5"
+version = "0.1.4"
 dependencies = [
  "base64",
  "chrono",
@@ -1596,6 +1596,7 @@ checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 [[package]]
 name = "ring"
 version = "0.16.9"
+source = "git+https://github.com/scs/webpki-nostd.git#935d31c36fa9b6d55a3226572eaf2b3ded7cf437"
 dependencies = [
  "cc",
  "libc",
@@ -2640,6 +2641,7 @@ dependencies = [
 [[package]]
 name = "webpki"
 version = "0.21.0"
+source = "git+https://github.com/scs/webpki-nostd.git#935d31c36fa9b6d55a3226572eaf2b3ded7cf437"
 dependencies = [
  "ring 0.16.16",
  "ring 0.16.9",
