@@ -1,6 +1,6 @@
 [package]
 name = "ias-verify"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
@@ -32,19 +32,8 @@ git = "https://github.com/paritytech/substrate.git"
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 
-#[dependencies.webpki]
-#git = 'https://github.com/briansmith/webpki.git'
-#rev = "9cf9f45"
-#default_features = false
-#features = ["alloc"]
-
-#[dependencies.webpki]
-#git = 'https://github.com/scs/webpki-nostd.git'
-#tag = "v0.21.0-nostd"
-#default_features = false
-
 [dependencies.webpki]
-git = 'https://github.com/Phala-Network/phala-parachain/tree/main/vendor/webpki'
+git = 'https://github.com/scs/webpki-nostd.git'
 default_features = false
 
 [dev-dependencies]

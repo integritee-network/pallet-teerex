@@ -828,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "ias-verify"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "base64",
  "chrono",
@@ -1596,7 +1596,6 @@ checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 [[package]]
 name = "ring"
 version = "0.16.9"
-source = "git+https://github.com/Phala-Network/phala-blockchain?tag=poc3-1.2.1#66b5526b9da6eec35f00fec9d964ea6d9af12c65"
 dependencies = [
  "cc",
  "libc",
@@ -2641,7 +2640,6 @@ dependencies = [
 [[package]]
 name = "webpki"
 version = "0.21.0"
-source = "git+https://github.com/Phala-Network/phala-blockchain?tag=poc3-1.2.1#66b5526b9da6eec35f00fec9d964ea6d9af12c65"
 dependencies = [
  "ring 0.16.16",
  "ring 0.16.9",
