@@ -26,28 +26,34 @@ path = './ias-verify'
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dev-dependencies]
 hex-literal = "*"
@@ -57,16 +63,20 @@ log = "*"
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dev-dependencies.sp-keyring]
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [dev-dependencies.pallet-balances]
 git = "https://github.com/paritytech/substrate.git"
+branch = "master"
 
 [features]
 default = ['std']
