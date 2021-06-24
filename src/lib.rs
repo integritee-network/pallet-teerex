@@ -48,6 +48,17 @@ pub struct Enclave<PubKey, Url> {
     pub url: Url,       // utf8 encoded url
 }
 
+impl<PubKey, Url> Enclave<PubKey, Url> {
+    pub fn new(pubkey: PubKey, mr_enclave: [u8; 32], timestamp: u64, url: Url) -> Self {
+        Enclave {
+            pubkey,
+            mr_enclave,
+            timestamp,
+            url,
+        }
+    }
+}
+
 pub type ShardIdentifier = H256;
 
 // Disambiguate associated types
@@ -109,14 +120,8 @@ decl_module! {
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             log::info!("substraTEE_registry: parameter lenght ok");
 
-            let report = Self::verify_report(&sender, ra_report)?;
-
-			let enclave = Enclave {
-				pubkey: sender.clone(),
-				mr_enclave: report.mr_enclave,
-				timestamp: report.timestamp,
-				url: worker_url.clone(),
-			};
+            let enclave = Self::verify_report(&sender, ra_report)
+                .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
 
 			Self::add_enclave(&sender, &enclave)?;
 			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
