@@ -134,6 +134,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
 			Ok(())
         }
+
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
