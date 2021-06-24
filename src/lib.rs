@@ -25,7 +25,7 @@ use frame_support::{
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
-use ias_verify::verify_ias_report;
+use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
 use sp_runtime::traits::{CheckedSub, SaturatedConversion};
 use sp_std::prelude::*;
@@ -109,20 +109,7 @@ decl_module! {
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             log::info!("substraTEE_registry: parameter lenght ok");
 
-            let report = verify_ias_report(&ra_report)
-                .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
-			log::info!("RA Report: {:?}", report);
-
-			let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
-				.map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
-			ensure!(sender == enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
-
-			// TODO: activate state checks as soon as we've fixed our setup
-            // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
-            //     "RA status is insufficient");
-            // log::info!("substraTEE_registry: status is acceptable");
-
-			Self::ensure_timestamp_within_24_hours(report.timestamp)?;
+            let report = Self::verify_report(&sender, ra_report)?;
 
 			let enclave = Enclave {
 				pubkey: sender.clone(),
@@ -282,6 +269,24 @@ impl<T: Config> Module<T> {
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
 
         Ok(())
+    }
+
+    fn verify_report(sender: &T::AccountId, ra_report: Vec<u8>) -> Result<SgxReport, sp_runtime::DispatchError> {
+        let report = verify_ias_report(&ra_report)
+            .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
+        log::info!("RA Report: {:?}", report);
+
+        let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
+            .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
+        ensure!(sender == &enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
+
+        // TODO: activate state checks as soon as we've fixed our setup
+        // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
+        //     "RA status is insufficient");
+        // log::info!("substraTEE_registry: status is acceptable");
+
+        Self::ensure_timestamp_within_24_hours(report.timestamp)?;
+        Ok(report)
     }
 
     fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
