@@ -91,3 +91,5 @@ std = [
     'sp-core/std',
     'timestamp/std'
 ]
+# allow workers to register without remote attestation for dev purposes
+skip-ias-check = []

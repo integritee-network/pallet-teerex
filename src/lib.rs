@@ -25,11 +25,13 @@ use frame_support::{
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
-use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
-use sp_runtime::traits::{CheckedSub, SaturatedConversion};
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::prelude::*;
 use sp_std::str;
+
+#[cfg(not(feature = "skip-ias-check"))]
+use ias_verify::{verify_ias_report, SgxReport};
 
 pub trait Config: system::Config + timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
@@ -44,6 +46,7 @@ const MAX_URL_LEN: usize = 256;
 pub struct Enclave<PubKey, Url> {
     pub pubkey: PubKey, // FIXME: this is redundant information
     pub mr_enclave: [u8; 32],
+    // Todo: make timestamp: Moment
     pub timestamp: u64, // unix epoch in milliseconds
     pub url: Url,       // utf8 encoded url
 }
@@ -120,8 +123,12 @@ decl_module! {
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             log::info!("substraTEE_registry: parameter lenght ok");
 
+            #[cfg(not(feature = "skip-ias-check"))]
             let enclave = Self::verify_report(&sender, ra_report)
                 .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
+
+            #[cfg(feature = "skip-ias-check")]
+            let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Module<T>>::get().saturated_into(), worker_url.clone());
 
 			Self::add_enclave(&sender, &enclave)?;
 			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
@@ -276,6 +283,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    #[cfg(not(feature = "skip-ias-check"))]
     fn verify_report(sender: &T::AccountId, ra_report: Vec<u8>) -> Result<SgxReport, sp_runtime::DispatchError> {
         let report = verify_ias_report(&ra_report)
             .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
@@ -294,7 +302,10 @@ impl<T: Config> Module<T> {
         Ok(report)
     }
 
+    #[cfg(not(feature = "skip-ias-check"))]
     fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
+        use sp_runtime::traits::CheckedSub;
+
         let elapsed_time = <timestamp::Module<T>>::get()
             .checked_sub(&T::Moment::saturated_from(report_timestamp))
             .ok_or("Underflow while calculating elapsed time since report creation")?;
