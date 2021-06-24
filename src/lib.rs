@@ -128,6 +128,9 @@ decl_module! {
                 .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
 
             #[cfg(feature = "skip-ias-check")]
+            log::warn!("[substraTEE_registry]: Skipping remote attestation check. Only dev-chains are allowed to do this!");
+
+            #[cfg(feature = "skip-ias-check")]
             let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Pallet<T>>::get().saturated_into(), worker_url.clone());
 
 			Self::add_enclave(&sender, &enclave)?;
