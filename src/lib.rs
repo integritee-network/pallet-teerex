@@ -25,7 +25,7 @@ use frame_support::{
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
-use ias_verify::{verify_ias_report, SgxReport};
+use ias_verify::verify_ias_report;
 use sp_core::H256;
 use sp_runtime::traits::{CheckedSub, SaturatedConversion};
 use sp_std::prelude::*;
@@ -122,7 +122,14 @@ decl_module! {
 
                     Self::ensure_timestamp_within_24_hours(report.timestamp)?;
 
-                    Self::register_verified_enclave(&sender, &report, worker_url.clone())?;
+                    let enclave = Enclave {
+                        pubkey: sender.clone(),
+                        mr_enclave: report.mr_enclave,
+                        timestamp: report.timestamp,
+                        url: worker_url.clone(),
+                    };
+
+                    Self::add_enclave(&sender, &enclave)?;
                     Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
                     Ok(())
 
@@ -226,17 +233,10 @@ decl_error! {
 }
 
 impl<T: Config> Module<T> {
-    fn register_verified_enclave(
+    fn add_enclave(
         sender: &T::AccountId,
-        report: &SgxReport,
-        url: Vec<u8>,
+        enclave: &Enclave<T::AccountId, Vec<u8>>,
     ) -> DispatchResult {
-        let enclave = Enclave {
-            pubkey: sender.clone(),
-            mr_enclave: report.mr_enclave,
-            timestamp: report.timestamp,
-            url,
-        };
         let enclave_idx = if <EnclaveIndex<T>>::contains_key(sender) {
             log::info!("Updating already registered enclave");
             <EnclaveIndex<T>>::get(sender)
