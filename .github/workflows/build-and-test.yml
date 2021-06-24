@@ -10,6 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+
   build:
     runs-on: ubuntu-20.04
     steps:
@@ -41,7 +42,7 @@ jobs:
         with:
           submodules: 'true'
       - name: Build
-        run: cargo build --release features skip-ias-check
+        run: cargo build --release --features skip-ias-check
   test:
     runs-on: ubuntu-20.04
     steps:
