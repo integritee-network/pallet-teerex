@@ -111,24 +111,19 @@ decl_module! {
             match verify_ias_report(&ra_report) {
                 Ok(report) => {
                     log::info!("RA Report: {:?}", report);
-                    let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
-                        Ok(signer) => signer,
-                        Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
-                    };
-                    log::info!("substraTEE_registry: decoded signer");
-                    // this is actually already implicitly tested by verify_ra_report
-                    ensure!(sender == enclave_signer,
-                        "extrinsic must be signed by attested enclave key");
-                    log::info!("substraTEE_registry: signer is a match");
+                    let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
+                        .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
+                    ensure!(sender == enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
+
                     // TODO: activate state checks as soon as we've fixed our setup
 //                    ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
 //                        "RA status is insufficient");
 //                    log::info!("substraTEE_registry: status is acceptable");
+
                     Self::ensure_timestamp_within_24_hours(report.timestamp)?;
 
                     Self::register_verified_enclave(&sender, &report, worker_url.clone())?;
                     Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-                    log::info!("substraTEE_registry: enclave registered");
                     Ok(())
 
                 }
@@ -220,9 +215,11 @@ decl_module! {
 
 decl_error! {
     pub enum Error for Module<T: Config> {
-        // failed to decode enclave signer
+        /// failed to decode enclave signer
         EnclaveSignerDecodeError,
-        // Verifying RA report failed
+        /// Sender does not match attested enclave in report
+        SenderIsNotAttestedEnclave,
+        /// Verifying RA report failed
         RemoteAttestationVerificationFailed,
         RemoteAttestationTooOld
     }
