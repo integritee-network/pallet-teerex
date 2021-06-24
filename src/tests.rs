@@ -20,12 +20,11 @@ use crate::mock::Event;
 use crate::mock::*;
 use crate::*;
 use codec::Decode;
-use frame_support::{assert_ok, IterableStorageMap};
+use frame_support::{assert_ok, assert_err, IterableStorageMap};
 use hex_literal::hex;
 use sp_core::{sr25519, H256};
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::IdentifyAccount;
-use sp_runtime::DispatchError;
 
 // reproduce with "substratee_worker dump_ra"
 const TEST4_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST4.der");
@@ -210,15 +209,13 @@ fn remove_middle_enclave_works() {
 fn register_enclave_with_different_signer_fails() {
     new_test_ext().execute_with(|| {
         let signer = get_signer(TEST7_SIGNER_PUB);
-        assert_eq!(
+        assert_err!(
             SubstrateeRegistry::register_enclave(
                 Origin::signed(signer),
                 TEST5_CERT.to_vec(),
                 URL.to_vec()
             ),
-            Err(DispatchError::Other(
-                "extrinsic must be signed by attested enclave key"
-            ))
+            Error::<Test>::SenderIsNotAttestedEnclave
         );
     })
 }
@@ -228,17 +225,13 @@ fn register_enclave_with_to_old_attestation_report_fails() {
     new_test_ext().execute_with(|| {
         Timestamp::set_timestamp(TEST7_TIMESTAMP + TWENTY_FOUR_HOURS + 1);
         let signer = get_signer(TEST7_SIGNER_PUB);
-        assert_eq!(
+        assert_err!(
             SubstrateeRegistry::register_enclave(
                 Origin::signed(signer),
                 TEST7_CERT.to_vec(),
                 URL.to_vec(),
             ),
-            Err(DispatchError::Module {
-                index: 3,
-                error: 2,
-                message: Some(Error::<Test>::RemoteAttestationTooOld.into())
-            })
+            Error::<Test>::RemoteAttestationTooOld
         );
     })
 }
