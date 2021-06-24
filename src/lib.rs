@@ -108,34 +108,32 @@ decl_module! {
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             log::info!("substraTEE_registry: parameter lenght ok");
-            match verify_ias_report(&ra_report) {
-                Ok(report) => {
-                    log::info!("RA Report: {:?}", report);
-                    let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
-                        .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
-                    ensure!(sender == enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
 
-                    // TODO: activate state checks as soon as we've fixed our setup
-//                    ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
-//                        "RA status is insufficient");
-//                    log::info!("substraTEE_registry: status is acceptable");
+            let report = verify_ias_report(&ra_report)
+                .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
+			log::info!("RA Report: {:?}", report);
 
-                    Self::ensure_timestamp_within_24_hours(report.timestamp)?;
+			let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
+				.map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
+			ensure!(sender == enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
 
-                    let enclave = Enclave {
-                        pubkey: sender.clone(),
-                        mr_enclave: report.mr_enclave,
-                        timestamp: report.timestamp,
-                        url: worker_url.clone(),
-                    };
+			// TODO: activate state checks as soon as we've fixed our setup
+            // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
+            //     "RA status is insufficient");
+            // log::info!("substraTEE_registry: status is acceptable");
 
-                    Self::add_enclave(&sender, &enclave)?;
-                    Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-                    Ok(())
+			Self::ensure_timestamp_within_24_hours(report.timestamp)?;
 
-                }
-                Err(_) => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
-            }
+			let enclave = Enclave {
+				pubkey: sender.clone(),
+				mr_enclave: report.mr_enclave,
+				timestamp: report.timestamp,
+				url: worker_url.clone(),
+			};
+
+			Self::add_enclave(&sender, &enclave)?;
+			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
+			Ok(())
         }
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
