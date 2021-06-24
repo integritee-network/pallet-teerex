@@ -1,6 +1,6 @@
 [package]
 name = "pallet-substratee-registry"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
