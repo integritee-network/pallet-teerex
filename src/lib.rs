@@ -128,7 +128,7 @@ decl_module! {
                 .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
 
             #[cfg(feature = "skip-ias-check")]
-            let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Module<T>>::get().saturated_into(), worker_url.clone());
+            let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Pallet<T>>::get().saturated_into(), worker_url.clone());
 
 			Self::add_enclave(&sender, &enclave)?;
 			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
@@ -306,7 +306,7 @@ impl<T: Config> Module<T> {
     fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
         use sp_runtime::traits::CheckedSub;
 
-        let elapsed_time = <timestamp::Module<T>>::get()
+        let elapsed_time = <timestamp::Pallet<T>>::get()
             .checked_sub(&T::Moment::saturated_from(report_timestamp))
             .ok_or("Underflow while calculating elapsed time since report creation")?;
 
