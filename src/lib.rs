@@ -25,11 +25,13 @@ use frame_support::{
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
-use ias_verify::{verify_ias_report, SgxReport};
 use sp_core::H256;
-use sp_runtime::traits::{CheckedSub, SaturatedConversion};
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::prelude::*;
 use sp_std::str;
+
+#[cfg(not(feature = "skip-ias-check"))]
+use ias_verify::{verify_ias_report, SgxReport};
 
 pub trait Config: system::Config + timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
@@ -44,8 +46,20 @@ const MAX_URL_LEN: usize = 256;
 pub struct Enclave<PubKey, Url> {
     pub pubkey: PubKey, // FIXME: this is redundant information
     pub mr_enclave: [u8; 32],
+    // Todo: make timestamp: Moment
     pub timestamp: u64, // unix epoch in milliseconds
     pub url: Url,       // utf8 encoded url
+}
+
+impl<PubKey, Url> Enclave<PubKey, Url> {
+    pub fn new(pubkey: PubKey, mr_enclave: [u8; 32], timestamp: u64, url: Url) -> Self {
+        Enclave {
+            pubkey,
+            mr_enclave,
+            timestamp,
+            url,
+        }
+    }
 }
 
 pub type ShardIdentifier = H256;
@@ -108,33 +122,22 @@ decl_module! {
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
             log::info!("substraTEE_registry: parameter lenght ok");
-            match verify_ias_report(&ra_report) {
-                Ok(report) => {
-                    log::info!("RA Report: {:?}", report);
-                    let enclave_signer = match T::AccountId::decode(&mut &report.pubkey[..]) {
-                        Ok(signer) => signer,
-                        Err(_) => return Err(<Error<T>>::EnclaveSignerDecodeError.into())
-                    };
-                    log::info!("substraTEE_registry: decoded signer");
-                    // this is actually already implicitly tested by verify_ra_report
-                    ensure!(sender == enclave_signer,
-                        "extrinsic must be signed by attested enclave key");
-                    log::info!("substraTEE_registry: signer is a match");
-                    // TODO: activate state checks as soon as we've fixed our setup
-//                    ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
-//                        "RA status is insufficient");
-//                    log::info!("substraTEE_registry: status is acceptable");
-                    Self::ensure_timestamp_within_24_hours(report.timestamp)?;
 
-                    Self::register_verified_enclave(&sender, &report, worker_url.clone())?;
-                    Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-                    log::info!("substraTEE_registry: enclave registered");
-                    Ok(())
+            #[cfg(not(feature = "skip-ias-check"))]
+            let enclave = Self::verify_report(&sender, ra_report)
+                .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
 
-                }
-                Err(_) => Err(<Error<T>>::RemoteAttestationVerificationFailed.into())
-            }
+            #[cfg(feature = "skip-ias-check")]
+            log::warn!("[substraTEE_registry]: Skipping remote attestation check. Only dev-chains are allowed to do this!");
+
+            #[cfg(feature = "skip-ias-check")]
+            let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Pallet<T>>::get().saturated_into(), worker_url.clone());
+
+			Self::add_enclave(&sender, &enclave)?;
+			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
+			Ok(())
         }
+
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
@@ -220,26 +223,21 @@ decl_module! {
 
 decl_error! {
     pub enum Error for Module<T: Config> {
-        // failed to decode enclave signer
+        /// failed to decode enclave signer
         EnclaveSignerDecodeError,
-        // Verifying RA report failed
+        /// Sender does not match attested enclave in report
+        SenderIsNotAttestedEnclave,
+        /// Verifying RA report failed
         RemoteAttestationVerificationFailed,
         RemoteAttestationTooOld
     }
 }
 
 impl<T: Config> Module<T> {
-    fn register_verified_enclave(
+    fn add_enclave(
         sender: &T::AccountId,
-        report: &SgxReport,
-        url: Vec<u8>,
+        enclave: &Enclave<T::AccountId, Vec<u8>>,
     ) -> DispatchResult {
-        let enclave = Enclave {
-            pubkey: sender.clone(),
-            mr_enclave: report.mr_enclave,
-            timestamp: report.timestamp,
-            url,
-        };
         let enclave_idx = if <EnclaveIndex<T>>::contains_key(sender) {
             log::info!("Updating already registered enclave");
             <EnclaveIndex<T>>::get(sender)
@@ -289,8 +287,30 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    #[cfg(not(feature = "skip-ias-check"))]
+    fn verify_report(sender: &T::AccountId, ra_report: Vec<u8>) -> Result<SgxReport, sp_runtime::DispatchError> {
+        let report = verify_ias_report(&ra_report)
+            .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
+        log::info!("RA Report: {:?}", report);
+
+        let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
+            .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
+        ensure!(sender == &enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
+
+        // TODO: activate state checks as soon as we've fixed our setup
+        // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
+        //     "RA status is insufficient");
+        // log::info!("substraTEE_registry: status is acceptable");
+
+        Self::ensure_timestamp_within_24_hours(report.timestamp)?;
+        Ok(report)
+    }
+
+    #[cfg(not(feature = "skip-ias-check"))]
     fn ensure_timestamp_within_24_hours(report_timestamp: u64) -> DispatchResult {
-        let elapsed_time = <timestamp::Module<T>>::get()
+        use sp_runtime::traits::CheckedSub;
+
+        let elapsed_time = <timestamp::Pallet<T>>::get()
             .checked_sub(&T::Moment::saturated_from(report_timestamp))
             .ok_or("Underflow while calculating elapsed time since report creation")?;
 
