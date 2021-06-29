@@ -1295,7 +1295,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-substratee-registry"
+name = "pallet-teerex"
 version = "0.9.0"
 dependencies = [
  "env_logger",
