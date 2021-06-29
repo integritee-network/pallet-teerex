@@ -1,7 +1,11 @@
 [package]
-name = "pallet-substratee-registry"
+name = "pallet-teerex"
+description = "The remote attestation registry and verification pallet for integritee blockchains and parachains"
 version = "0.9.0"
-authors = ["Supercomputing Systems AG <info@scs.ch>"]
+authors = ["Integritee AG"]
+homepage = "https://integritee.network/"
+repository = "https://github.com/integritee-network/pallet-teerex/"
+license = "Apache-2.0"
 edition = "2018"
 
 [workspace]

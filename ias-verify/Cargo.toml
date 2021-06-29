@@ -1,7 +1,11 @@
 [package]
 name = "ias-verify"
 version = "0.1.4"
-authors = ["Supercomputing Systems AG <info@scs.ch>"]
+description = "a certificate verification and IAS report parser crate for the teerex pallet"
+authors = ["Integritee AG"]
+homepage = "https://integritee.network/"
+repository = "https://github.com/integritee-network/pallet-teerex/"
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
