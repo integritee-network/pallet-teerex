@@ -28,18 +28,19 @@ use frame_system::RawOrigin;
 use sp_core::sr25519;
 
 use crate::{Pallet, Config};
-use crate::mock::{
-	consts::*, Timestamp, SubstrateeRegistry,
-	AccountId
-};
+use crate::mock::{IAS_SETUPS, Timestamp, SubstrateeRegistry, consts::URL};
 
 use crate::Pallet as PalletTeerex;
 
 benchmarks! {
+	where_clause {  where T::AccountId: From<sr25519::Public> }
 	register_enclave {
-		Timestamp::set_timestamp(TEST4_TIMESTAMP);
-		let signer: AccountId = sr25519::Public::decode(&mut &TEST4_SIGNER_PUB[..]).unwrap().into();
-	}: _(RawOrigin::Signed(Default::default()), TEST4_CERT.to_vec(), URL.to_vec())
+		let i in 0 .. IAS_SETUPS.len() as u32;
+		Timestamp::set_timestamp(IAS_SETUPS[i as usize].timestamp);
+		let signer: T::AccountId = sr25519::Public::decode(
+			&mut &IAS_SETUPS[i as usize].signer_pub[..]
+		).unwrap().into();
+	}: _(RawOrigin::Signed(signer), IAS_SETUPS[i as usize].cert.to_vec(), URL.to_vec())
 	verify {
 		assert_eq!(SubstrateeRegistry::enclave_count(), 1);
 	}
