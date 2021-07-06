@@ -24,29 +24,23 @@ use super::*;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 
-use crate::{Pallet, Config};
-use crate::mock::{ias::IAS_SETUPS, Timestamp, SubstrateeRegistry, consts::URL};
+use crate::mock::{consts::URL, ias::IAS_SETUPS, SubstrateeRegistry, Timestamp};
 use crate::test_utils::get_signer;
-
-use crate::Pallet as PalletTeerex;
+use crate::{Config, Module as PalletModule};
 
 benchmarks! {
-	where_clause {  where T::AccountId: From<&'static [u8]> }
-	register_enclave {
-		let i in 0 .. IAS_SETUPS.len() as u32;
-		let setup = IAS_SETUPS[i as usize];
+    where_clause {  where T::AccountId: From<&'static [u8]> }
+    register_enclave {
+        let i in 0 .. IAS_SETUPS.len() as u32;
+        let setup = IAS_SETUPS[i as usize];
 
-		Timestamp::set_timestamp(setup.timestamp);
-		let signer: T::AccountId = get_signer(setup.signer_pub);
+        Timestamp::set_timestamp(setup.timestamp);
+        let signer: T::AccountId = get_signer(setup.signer_pub);
 
-	}: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
-	verify {
-		assert_eq!(SubstrateeRegistry::enclave_count(), 1);
-	}
+    }: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
+    verify {
+        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+    }
 }
 
-impl_benchmark_test_suite!(
-	PalletTeerex,
-	crate::mock::new_test_ext(),
-	crate::mock::Test,
-);
+impl_benchmark_test_suite!(PalletModule, crate::mock::new_test_ext(), crate::mock::Test,);
