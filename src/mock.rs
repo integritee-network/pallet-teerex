@@ -30,46 +30,49 @@ use substratee_registry::Config;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-use consts::*;
+#[cfg(feature = "runtime-benchmarks")]
+pub mod ias {
+    use super::consts::*;
 
-#[derive(Copy, Clone)]
-pub struct IasSetup {
-    pub cert: &'static [u8],
-    pub signer_pub: &'static [u8],
-    pub mrenclave: [u8; 32],
-    pub timestamp: u64
+    #[derive(Copy, Clone)]
+    pub struct IasSetup {
+        pub cert: &'static [u8],
+        pub signer_pub: &'static [u8],
+        pub mrenclave: [u8; 32],
+        pub timestamp: u64
+    }
+
+    pub const IAS_SETUPS: [IasSetup; 4] = [TEST4_SETUP, TEST5_SETUP, TEST6_SETUP, TEST7_SETUP];
+
+    pub const TEST4_SETUP: IasSetup = IasSetup {
+        cert: TEST4_CERT,
+        signer_pub: TEST4_SIGNER_PUB,
+        mrenclave: TEST4_MRENCLAVE,
+        timestamp: TEST4_TIMESTAMP
+    };
+
+    pub const TEST5_SETUP: IasSetup = IasSetup {
+        cert: TEST5_CERT,
+        signer_pub: TEST5_SIGNER_PUB,
+        mrenclave: TEST5_MRENCLAVE,
+        timestamp: TEST5_TIMESTAMP
+    };
+
+    pub const TEST6_SETUP: IasSetup = IasSetup {
+        cert: TEST6_CERT,
+        signer_pub: TEST6_SIGNER_PUB,
+        mrenclave: TEST6_MRENCLAVE,
+        timestamp: TEST6_TIMESTAMP
+    };
+
+    pub const TEST7_SETUP: IasSetup = IasSetup {
+        cert: TEST7_CERT,
+        signer_pub: TEST7_SIGNER_PUB,
+        mrenclave: TEST7_MRENCLAVE,
+        timestamp: TEST7_TIMESTAMP
+    };
+
 }
-
-pub const IAS_SETUPS: [IasSetup; 4] = [TEST4_SETUP, TEST5_SETUP, TEST6_SETUP, TEST7_SETUP];
-
-pub const TEST4_SETUP: IasSetup = IasSetup {
-    cert: TEST4_CERT,
-    signer_pub: TEST4_SIGNER_PUB,
-    mrenclave: TEST4_MRENCLAVE,
-    timestamp: TEST4_TIMESTAMP
-};
-
-pub const TEST5_SETUP: IasSetup = IasSetup {
-    cert: TEST5_CERT,
-    signer_pub: TEST5_SIGNER_PUB,
-    mrenclave: TEST5_MRENCLAVE,
-    timestamp: TEST5_TIMESTAMP
-};
-
-pub const TEST6_SETUP: IasSetup = IasSetup {
-    cert: TEST6_CERT,
-    signer_pub: TEST6_SIGNER_PUB,
-    mrenclave: TEST6_MRENCLAVE,
-    timestamp: TEST6_TIMESTAMP
-};
-
-pub const TEST7_SETUP: IasSetup = IasSetup {
-    cert: TEST7_CERT,
-    signer_pub: TEST7_SIGNER_PUB,
-    mrenclave: TEST7_MRENCLAVE,
-    timestamp: TEST7_TIMESTAMP
-};
-
 pub mod consts {
     use hex_literal::hex;
 

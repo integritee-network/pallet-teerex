@@ -25,7 +25,7 @@ use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 
 use crate::{Pallet, Config};
-use crate::mock::{IAS_SETUPS, Timestamp, SubstrateeRegistry, consts::URL};
+use crate::mock::{ias::IAS_SETUPS, Timestamp, SubstrateeRegistry, consts::URL};
 use crate::test_utils::get_signer;
 
 use crate::Pallet as PalletTeerex;

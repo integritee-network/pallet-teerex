@@ -18,11 +18,9 @@
 //use super::*;
 use crate::{Enclave, RawEvent, Request, Error, EnclaveRegistry, ShardIdentifier, ConfirmedCalls};
 use crate::mock::{*, consts::*};
-use codec::Decode;
 use frame_support::{assert_ok, assert_err, IterableStorageMap, StorageMap};
-use sp_core::{sr25519, H256};
+use sp_core::H256;
 use sp_keyring::AccountKeyring;
-use sp_runtime::traits::IdentifyAccount;
 
 fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
     <EnclaveRegistry<Test>>::iter().collect::<Vec<(u64, Enclave<AccountId, Vec<u8>>)>>()
