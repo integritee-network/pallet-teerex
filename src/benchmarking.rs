@@ -21,26 +21,25 @@
 
 use super::*;
 
-use codec::Decode;
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, account};
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
-
-use sp_core::sr25519;
 
 use crate::{Pallet, Config};
 use crate::mock::{IAS_SETUPS, Timestamp, SubstrateeRegistry, consts::URL};
+use crate::test_utils::get_signer;
 
 use crate::Pallet as PalletTeerex;
 
 benchmarks! {
-	where_clause {  where T::AccountId: From<sr25519::Public> }
+	where_clause {  where T::AccountId: From<&'static [u8]> }
 	register_enclave {
 		let i in 0 .. IAS_SETUPS.len() as u32;
-		Timestamp::set_timestamp(IAS_SETUPS[i as usize].timestamp);
-		let signer: T::AccountId = sr25519::Public::decode(
-			&mut &IAS_SETUPS[i as usize].signer_pub[..]
-		).unwrap().into();
-	}: _(RawOrigin::Signed(signer), IAS_SETUPS[i as usize].cert.to_vec(), URL.to_vec())
+		let setup = IAS_SETUPS[i as usize];
+
+		Timestamp::set_timestamp(setup.timestamp);
+		let signer: T::AccountId = get_signer(setup.signer_pub);
+
+	}: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
 	verify {
 		assert_eq!(SubstrateeRegistry::enclave_count(), 1);
 	}

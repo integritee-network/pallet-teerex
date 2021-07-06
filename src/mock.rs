@@ -32,6 +32,7 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 use consts::*;
 
+#[derive(Copy, Clone)]
 pub struct IasSetup {
     pub cert: &'static [u8],
     pub signer_pub: &'static [u8],
@@ -106,6 +107,7 @@ pub mod consts {
     pub const TEST6_TIMESTAMP: u64 = 1587900233000;
     pub const TEST7_TIMESTAMP: u64 = 1587900450000;
 
+    #[cfg(test)]
     pub const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
 
     pub const URL: &[u8] = &[

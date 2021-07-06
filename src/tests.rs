@@ -24,12 +24,13 @@ use sp_core::{sr25519, H256};
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::IdentifyAccount;
 
-fn get_signer(pubkey: &[u8]) -> AccountId {
-    AccountId::from(sr25519::Public::decode(&mut &pubkey[..]).unwrap()).into_account()
-}
-
 fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
     <EnclaveRegistry<Test>>::iter().collect::<Vec<(u64, Enclave<AccountId, Vec<u8>>)>>()
+}
+
+// give get_signer a concrete type
+fn get_signer(pubkey: &[u8]) -> AccountId {
+    crate::test_utils::get_signer(pubkey)
 }
 
 #[test]
