@@ -39,7 +39,7 @@ pub mod ias {
         pub cert: &'static [u8],
         pub signer_pub: &'static [u8],
         pub mrenclave: [u8; 32],
-        pub timestamp: u64
+        pub timestamp: u64,
     }
 
     pub const IAS_SETUPS: [IasSetup; 4] = [TEST4_SETUP, TEST5_SETUP, TEST6_SETUP, TEST7_SETUP];
@@ -48,30 +48,29 @@ pub mod ias {
         cert: TEST4_CERT,
         signer_pub: TEST4_SIGNER_PUB,
         mrenclave: TEST4_MRENCLAVE,
-        timestamp: TEST4_TIMESTAMP
+        timestamp: TEST4_TIMESTAMP,
     };
 
     pub const TEST5_SETUP: IasSetup = IasSetup {
         cert: TEST5_CERT,
         signer_pub: TEST5_SIGNER_PUB,
         mrenclave: TEST5_MRENCLAVE,
-        timestamp: TEST5_TIMESTAMP
+        timestamp: TEST5_TIMESTAMP,
     };
 
     pub const TEST6_SETUP: IasSetup = IasSetup {
         cert: TEST6_CERT,
         signer_pub: TEST6_SIGNER_PUB,
         mrenclave: TEST6_MRENCLAVE,
-        timestamp: TEST6_TIMESTAMP
+        timestamp: TEST6_TIMESTAMP,
     };
 
     pub const TEST7_SETUP: IasSetup = IasSetup {
         cert: TEST7_CERT,
         signer_pub: TEST7_SIGNER_PUB,
         mrenclave: TEST7_MRENCLAVE,
-        timestamp: TEST7_TIMESTAMP
+        timestamp: TEST7_TIMESTAMP,
     };
-
 }
 pub mod consts {
     use hex_literal::hex;
