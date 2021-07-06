@@ -7,6 +7,7 @@ homepage = "https://integritee.network/"
 repository = "https://github.com/integritee-network/pallet-teerex/"
 license = "Apache-2.0"
 edition = "2018"
+resolver = "2"
 
 [workspace]
 members = [
@@ -87,11 +88,13 @@ branch = "master"
 
 [dependencies.sp-keyring]
 optional = true
+default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
 [dependencies.pallet-balances]
 optional = true
+default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
@@ -104,15 +107,17 @@ default = ['std']
 std = [
     'serde',
     'codec/std',
-    'frame-benchmarking',
     'frame-support/std',
     'frame-system/std',
     'ias-verify/std',
     'sp-std/std',
     'sp-io/std',
     'sp-core/std',
-    'timestamp/std'
+    'timestamp/std',
+    # benchmarking stuff
+    'frame-benchmarking/std',
+    "pallet-balances/std",
 ]
-runtime-benchmarks = ['frame-benchmarking', "hex-literal", "sp-keyring", "pallet-balances"]
+runtime-benchmarks = ['frame-benchmarking', "hex-literal", "pallet-balances"]
 # allow workers to register without remote attestation for dev purposes
 skip-ias-check = []
