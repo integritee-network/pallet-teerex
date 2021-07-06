@@ -322,7 +322,8 @@ impl<T: Config> Module<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 #[cfg(test)]
 mod tests;
+mod benchmarking;

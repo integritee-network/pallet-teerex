@@ -16,6 +16,7 @@ members = [
 [dependencies]
 serde = { features = ['derive'], optional = true, version = '1.0.101' }
 log = { version = "0.4.14", default-features = false }
+hex-literal = { version = "0.3.2", optional = true }
 
 [dependencies.codec]
 default-features = false
@@ -69,12 +70,28 @@ default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
+[dependencies.frame-benchmarking]
+default-features = false
+optional = true
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
 [dev-dependencies.externalities]
 package = "sp-externalities"
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
 [dev-dependencies.sp-keyring]
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.sp-keyring]
+optional = true
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.pallet-balances]
+optional = true
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
@@ -87,6 +104,7 @@ default = ['std']
 std = [
     'serde',
     'codec/std',
+    'frame-benchmarking',
     'frame-support/std',
     'frame-system/std',
     'ias-verify/std',
@@ -95,5 +113,6 @@ std = [
     'sp-core/std',
     'timestamp/std'
 ]
+runtime-benchmarks = ['frame-benchmarking', "hex-literal", "sp-keyring", "pallet-balances"]
 # allow workers to register without remote attestation for dev purposes
 skip-ias-check = []
