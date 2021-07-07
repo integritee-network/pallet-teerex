@@ -29,11 +29,6 @@ version = '2.0.0'
 default-features = false
 path = './ias-verify'
 
-[dependencies.sp-std]
-default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
 [dependencies.frame-support]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
@@ -55,9 +50,38 @@ default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
+[dependencies.sp-keyring]
+optional = true
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.sp-runtime]
+default-features = false
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.sp-std]
+default-features = false
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+
+## benchmarking stuff
+[dependencies.frame-benchmarking]
+default-features = false
+optional = true
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.pallet-balances]
+optional = true
+default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
@@ -66,35 +90,12 @@ hex-literal = "*"
 env_logger = "0.7.1"
 log = "*"
 
-[dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
-[dependencies.frame-benchmarking]
-default-features = false
-optional = true
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
 [dev-dependencies.externalities]
 package = "sp-externalities"
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
 [dev-dependencies.sp-keyring]
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
-[dependencies.sp-keyring]
-optional = true
-default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
-[dependencies.pallet-balances]
-optional = true
-default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
@@ -110,9 +111,10 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'ias-verify/std',
-    'sp-std/std',
-    'sp-io/std',
     'sp-core/std',
+    'sp-io/std',
+    'sp-runtime/std',
+    'sp-std/std',
     'timestamp/std',
     # benchmarking stuff
     'frame-benchmarking/std',
