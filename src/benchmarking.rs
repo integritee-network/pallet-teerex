@@ -36,7 +36,7 @@ pub fn get_signer<AccountId: From<[u8; 32]>>(pubkey: &[u8; 32]) -> AccountId {
 benchmarks! {
     where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
-        let i in 0 .. IAS_SETUPS.len() as u32;
+        let i in 0 .. (IAS_SETUPS.len() as u32 - 1);
         let setup = IAS_SETUPS[i as usize];
 
         timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
