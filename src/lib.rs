@@ -133,9 +133,9 @@ decl_module! {
             #[cfg(feature = "skip-ias-check")]
             let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Pallet<T>>::get().saturated_into(), worker_url.clone());
 
-			Self::add_enclave(&sender, &enclave)?;
-			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-			Ok(())
+            Self::add_enclave(&sender, &enclave)?;
+            Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
+            Ok(())
         }
 
         // TODO: we can't expect a dead enclave to unregister itself
@@ -288,14 +288,20 @@ impl<T: Config> Module<T> {
     }
 
     #[cfg(not(feature = "skip-ias-check"))]
-    fn verify_report(sender: &T::AccountId, ra_report: Vec<u8>) -> Result<SgxReport, sp_runtime::DispatchError> {
+    fn verify_report(
+        sender: &T::AccountId,
+        ra_report: Vec<u8>,
+    ) -> Result<SgxReport, sp_runtime::DispatchError> {
         let report = verify_ias_report(&ra_report)
             .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
         log::info!("RA Report: {:?}", report);
 
         let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
             .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
-        ensure!(sender == &enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
+        ensure!(
+            sender == &enclave_signer,
+            <Error<T>>::SenderIsNotAttestedEnclave
+        );
 
         // TODO: activate state checks as soon as we've fixed our setup
         // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
@@ -322,9 +328,9 @@ impl<T: Config> Module<T> {
     }
 }
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarking;
+#[cfg(test)]
 mod mock;
 mod test_utils;
 #[cfg(test)]
 mod tests;
-mod benchmarking;

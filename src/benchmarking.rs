@@ -21,12 +21,13 @@
 
 use super::*;
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::benchmarks;
 use frame_system::RawOrigin;
 
-use crate::mock::{consts::URL, ias::IAS_SETUPS, SubstrateeRegistry, Timestamp};
-use crate::test_utils::get_signer;
-use crate::{Config, Module as PalletModule};
+use sp_runtime::traits::CheckedConversion;
+
+use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
+use crate::Pallet as Teerex;
 
 benchmarks! {
     where_clause {  where T::AccountId: From<&'static [u8]> }
@@ -34,13 +35,21 @@ benchmarks! {
         let i in 0 .. IAS_SETUPS.len() as u32;
         let setup = IAS_SETUPS[i as usize];
 
-        Timestamp::set_timestamp(setup.timestamp);
+        timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
         let signer: T::AccountId = get_signer(setup.signer_pub);
 
     }: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
     verify {
-        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+        assert_eq!(Teerex::<T>::enclave_count(), 1);
     }
 }
 
-impl_benchmark_test_suite!(PalletModule, crate::mock::new_test_ext(), crate::mock::Test,);
+#[cfg(test)]
+use crate::{Config, Module as PalletModule};
+
+#[cfg(test)]
+frame_benchmarking::impl_benchmark_test_suite!(
+    PalletModule,
+    crate::mock::new_test_ext(),
+    crate::mock::Test,
+);

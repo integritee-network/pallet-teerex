@@ -22,100 +22,25 @@ use frame_system as system;
 use sp_core::{sr25519, H256};
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
-    testing::Header,
+    generic,
     traits::{BlakeTwo256, IdentityLookup, Verify},
 };
 use substratee_registry::Config;
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
+pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+pub type BlockNumber = u32;
+pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 
-#[cfg(feature = "runtime-benchmarks")]
-pub mod ias {
-    use super::consts::*;
-
-    #[derive(Copy, Clone)]
-    pub struct IasSetup {
-        pub cert: &'static [u8],
-        pub signer_pub: &'static [u8],
-        pub mrenclave: [u8; 32],
-        pub timestamp: u64,
-    }
-
-    pub const IAS_SETUPS: [IasSetup; 4] = [TEST4_SETUP, TEST5_SETUP, TEST6_SETUP, TEST7_SETUP];
-
-    pub const TEST4_SETUP: IasSetup = IasSetup {
-        cert: TEST4_CERT,
-        signer_pub: TEST4_SIGNER_PUB,
-        mrenclave: TEST4_MRENCLAVE,
-        timestamp: TEST4_TIMESTAMP,
-    };
-
-    pub const TEST5_SETUP: IasSetup = IasSetup {
-        cert: TEST5_CERT,
-        signer_pub: TEST5_SIGNER_PUB,
-        mrenclave: TEST5_MRENCLAVE,
-        timestamp: TEST5_TIMESTAMP,
-    };
-
-    pub const TEST6_SETUP: IasSetup = IasSetup {
-        cert: TEST6_CERT,
-        signer_pub: TEST6_SIGNER_PUB,
-        mrenclave: TEST6_MRENCLAVE,
-        timestamp: TEST6_TIMESTAMP,
-    };
-
-    pub const TEST7_SETUP: IasSetup = IasSetup {
-        cert: TEST7_CERT,
-        signer_pub: TEST7_SIGNER_PUB,
-        mrenclave: TEST7_MRENCLAVE,
-        timestamp: TEST7_TIMESTAMP,
-    };
-}
-pub mod consts {
-    use hex_literal::hex;
-
-    // reproduce with "substratee_worker dump_ra"
-    pub const TEST4_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST4.der");
-    pub const TEST5_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST5.der");
-    pub const TEST6_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST6.der");
-    pub const TEST7_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST7.der");
-
-    // reproduce with substratee-worker signing-key
-    pub const TEST4_SIGNER_PUB: &[u8] =
-        include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST4.bin");
-    // equal to TEST4! because of MRSIGNER policy it was possible to change the MRENCLAVE but keep the secret
-    pub const TEST5_SIGNER_PUB: &[u8] =
-        include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST5.bin");
-    pub const TEST6_SIGNER_PUB: &[u8] =
-        include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST6.bin");
-    pub const TEST7_SIGNER_PUB: &[u8] =
-        include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST7.bin");
-
-    // reproduce with "make mrenclave" in worker repo root
-    // MRSIGNER is always 83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
-    pub const TEST4_MRENCLAVE: [u8; 32] =
-        hex!("7a3454ec8f42e265cb5be7dfd111e1d95ac6076ed82a0948b2e2a45cf17b62a0");
-    pub const TEST5_MRENCLAVE: [u8; 32] =
-        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
-    pub const TEST6_MRENCLAVE: [u8; 32] =
-        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
-    pub const TEST7_MRENCLAVE: [u8; 32] =
-        hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
-
-    // unix epoch. must be later than this
-    pub const TEST4_TIMESTAMP: u64 = 1587899785000;
-    pub const TEST5_TIMESTAMP: u64 = 1587900013000;
-    pub const TEST6_TIMESTAMP: u64 = 1587900233000;
-    pub const TEST7_TIMESTAMP: u64 = 1587900450000;
-
-    #[cfg(test)]
-    pub const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
-
-    pub const URL: &[u8] = &[
-        119, 115, 58, 47, 47, 49, 50, 55, 46, 48, 46, 48, 46, 49, 58, 57, 57, 57, 49,
-    ];
-}
+pub type SignedExtra = (
+    frame_system::CheckSpecVersion<Test>,
+    frame_system::CheckTxVersion<Test>,
+    frame_system::CheckGenesis<Test>,
+    frame_system::CheckEra<Test>,
+    frame_system::CheckNonce<Test>,
+    frame_system::CheckWeight<Test>,
+);
 
 frame_support::construct_runtime!(
     pub enum Test where
@@ -131,7 +56,7 @@ frame_support::construct_runtime!(
 );
 
 parameter_types! {
-    pub const BlockHashCount: u64 = 250;
+    pub const BlockHashCount: u32 = 250;
 }
 impl frame_system::Config for Test {
     type BaseCallFilter = ();
@@ -141,7 +66,7 @@ impl frame_system::Config for Test {
     type Origin = Origin;
     type Index = u64;
     type Call = Call;
-    type BlockNumber = u64;
+    type BlockNumber = BlockNumber;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
@@ -199,12 +124,6 @@ impl Config for Test {
     type Currency = Balances;
     type MomentsPerDay = MomentsPerDay;
 }
-
-// Easy access alias
-//pub type Registry = Module<Test>;
-//pub type System = system::Module<TestRuntime>;
-//pub type Balances = balances::Module<TestRuntime>;
-//pub type Timestamp = timestamp::Module<TestRuntime>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.

@@ -50,11 +50,6 @@ default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
-[dependencies.sp-keyring]
-optional = true
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
@@ -120,6 +115,11 @@ std = [
     'frame-benchmarking/std',
     "pallet-balances/std",
 ]
-runtime-benchmarks = ['frame-benchmarking', "hex-literal", "pallet-balances"]
+runtime-benchmarks = [
+    'frame-benchmarking',
+    "hex-literal",
+    "pallet-balances",
+    "timestamp/runtime-benchmarks"
+]
 # allow workers to register without remote attestation for dev purposes
 skip-ias-check = []

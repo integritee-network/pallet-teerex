@@ -16,9 +16,10 @@
 */
 
 //use super::*;
-use crate::{Enclave, RawEvent, Request, Error, EnclaveRegistry, ShardIdentifier, ConfirmedCalls};
-use crate::mock::{*, consts::*};
-use frame_support::{assert_ok, assert_err, IterableStorageMap, StorageMap};
+use crate::mock::*;
+use crate::test_utils::consts::*;
+use crate::{ConfirmedCalls, Enclave, EnclaveRegistry, Error, RawEvent, Request, ShardIdentifier};
+use frame_support::{assert_err, assert_ok, IterableStorageMap, StorageMap};
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 
