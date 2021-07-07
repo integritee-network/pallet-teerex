@@ -20,6 +20,7 @@ use crate::mock::*;
 use crate::test_utils::consts::*;
 use crate::{ConfirmedCalls, Enclave, EnclaveRegistry, Error, RawEvent, Request, ShardIdentifier};
 use frame_support::{assert_err, assert_ok, IterableStorageMap, StorageMap};
+use sp_core::crypto::UncheckedFrom;
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 
@@ -28,8 +29,8 @@ fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
 }
 
 // give get_signer a concrete type
-fn get_signer(pubkey: &[u8]) -> AccountId {
-    crate::test_utils::get_signer(pubkey)
+fn get_signer(pubkey: &[u8; 32]) -> AccountId {
+    AccountId::unchecked_from(*pubkey)
 }
 
 #[test]

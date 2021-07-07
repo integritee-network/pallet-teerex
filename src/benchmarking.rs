@@ -26,11 +26,15 @@ use frame_system::RawOrigin;
 
 use sp_runtime::traits::CheckedConversion;
 
-use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
+use crate::test_utils::{consts::URL, ias::IAS_SETUPS};
 use crate::Pallet as Teerex;
 
+pub fn get_signer<AccountId: From<[u8; 32]>>(pubkey: &[u8; 32]) -> AccountId {
+    AccountId::from(*pubkey)
+}
+
 benchmarks! {
-    where_clause {  where T::AccountId: From<&'static [u8]> }
+    where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
         let i in 0 .. IAS_SETUPS.len() as u32;
         let setup = IAS_SETUPS[i as usize];

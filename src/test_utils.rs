@@ -1,16 +1,5 @@
 #![cfg(any(test, feature = "runtime-benchmarks"))]
 
-use frame_benchmarking::sp_std::convert::TryFrom;
-use sp_std::fmt::Debug;
-
-pub fn get_signer<'a, AccountId>(pubkey: &'a [u8]) -> AccountId
-where
-    AccountId: TryFrom<&'a [u8]>,
-    <AccountId as TryFrom<&'a [u8]>>::Error: Debug,
-{
-    AccountId::try_from(pubkey).unwrap()
-}
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod ias {
     use super::consts::*;
@@ -18,7 +7,7 @@ pub mod ias {
     #[derive(Copy, Clone)]
     pub struct IasSetup {
         pub cert: &'static [u8],
-        pub signer_pub: &'static [u8],
+        pub signer_pub: &'static [u8; 32],
         pub mrenclave: [u8; 32],
         pub timestamp: u64,
     }
@@ -64,14 +53,14 @@ pub mod consts {
     pub const TEST7_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST7.der");
 
     // reproduce with substratee-worker signing-key
-    pub const TEST4_SIGNER_PUB: &[u8] =
+    pub const TEST4_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST4.bin");
     // equal to TEST4! because of MRSIGNER policy it was possible to change the MRENCLAVE but keep the secret
-    pub const TEST5_SIGNER_PUB: &[u8] =
+    pub const TEST5_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST5.bin");
-    pub const TEST6_SIGNER_PUB: &[u8] =
+    pub const TEST6_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST6.bin");
-    pub const TEST7_SIGNER_PUB: &[u8] =
+    pub const TEST7_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST7.bin");
 
     // reproduce with "make mrenclave" in worker repo root
