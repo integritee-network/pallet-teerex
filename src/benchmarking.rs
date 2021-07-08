@@ -90,6 +90,30 @@ benchmarks! {
         assert!(!crate::EnclaveIndex::<T>::contains_key(&accounts[0]));
         assert_eq!(Teerex::<T>::enclave_count(), enclave_count as u64 - 1);
     }
+
+    // Benchmark `confirm_block` with the worst possible conditions
+    // * sender enclave is registered
+    confirm_block {
+        let accounts: Vec<T::AccountId> = random_accounts::<T>(1);
+        add_enclaves_to_registry::<T>(&accounts);
+
+        let shard: ShardIdentifier = [1; 32].into();
+        let block_hash: H256 = [2; 32].into();
+        let ipfs_hash: Vec<u8> = [3; 32].to_vec();
+
+    }: _(RawOrigin::Signed(accounts[0].clone()), shard, block_hash, ipfs_hash.clone())
+    verify {
+        assert_eq!(
+            Teerex::<T>::latest_ipfs_hash(&shard),
+            ipfs_hash
+        );
+
+        assert_eq!(
+            Teerex::<T>::worker_for_shard(&shard),
+            Teerex::<T>::enclave_index(&accounts[0])
+        );
+
+    }
 }
 
 #[cfg(test)]
