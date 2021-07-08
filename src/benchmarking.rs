@@ -36,27 +36,19 @@ fn ensure_not_skipping_ra_check() {
     };
 }
 
-fn add_enclaves_to_registry<T: Config>(amount: u8) -> Vec<T::AccountId>
+fn random_accounts<T: Config>(amount: u32) -> Vec<T::AccountId>
 where
     T::AccountId: UncheckedFrom<H256>,
 {
-    let accounts: Vec<T::AccountId> = (0..amount)
+    (0..amount)
         .map(|_n| T::AccountId::unchecked_from(H256::random()))
-        .collect();
+        .collect()
+}
 
+fn add_enclaves_to_registry<T: Config>(accounts: &Vec<T::AccountId>) {
     for a in accounts.iter() {
-        Teerex::<T>::add_enclave(
-            a,
-            &Enclave::new(
-                a.clone(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-            ),
-        )
-        .unwrap()
+        Teerex::<T>::add_enclave(a, &Enclave::default().with_pubkey(a.clone())).unwrap()
     }
-    accounts
 }
 
 benchmarks! {
