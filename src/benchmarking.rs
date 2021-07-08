@@ -24,6 +24,7 @@ use super::*;
 use frame_benchmarking::benchmarks;
 use frame_system::RawOrigin;
 
+use sp_core::crypto::UncheckedFrom;
 use sp_runtime::traits::CheckedConversion;
 
 use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
@@ -33,6 +34,29 @@ fn ensure_not_skipping_ra_check() {
     if cfg!(feature = "skip-ias-check") {
         panic!("Benchmark does not allow the `skip-ias-check` flag.");
     };
+}
+
+fn add_enclaves_to_registry<T: Config>(amount: u8) -> Vec<T::AccountId>
+where
+    T::AccountId: UncheckedFrom<H256>,
+{
+    let accounts: Vec<T::AccountId> = (0..amount)
+        .map(|_n| T::AccountId::unchecked_from(H256::random()))
+        .collect();
+
+    for a in accounts.iter() {
+        Teerex::<T>::add_enclave(
+            a,
+            &Enclave::new(
+                a.clone(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+            ),
+        )
+        .unwrap()
+    }
+    accounts
 }
 
 benchmarks! {
