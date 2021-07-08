@@ -20,7 +20,6 @@ use crate::mock::*;
 use crate::test_utils::consts::*;
 use crate::{ConfirmedCalls, Enclave, EnclaveRegistry, Error, RawEvent, Request, ShardIdentifier};
 use frame_support::{assert_err, assert_ok, IterableStorageMap, StorageMap};
-use sp_core::crypto::UncheckedFrom;
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 
@@ -30,7 +29,7 @@ fn list_enclaves() -> Vec<(u64, Enclave<AccountId, Vec<u8>>)> {
 
 // give get_signer a concrete type
 fn get_signer(pubkey: &[u8; 32]) -> AccountId {
-    AccountId::unchecked_from(*pubkey)
+    crate::test_utils::get_signer(pubkey)
 }
 
 #[test]
@@ -326,23 +325,23 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
         ));
 
         assert_ok!(Balances::transfer(
-            Origin::signed(AccountKeyring::Alice.public()),
-            signer,
+            Origin::signed(AccountKeyring::Alice.to_account_id()),
+            signer.clone(),
             1 << 50
         ));
 
         assert!(SubstrateeRegistry::unshield_funds(
-            Origin::signed(signer),
-            AccountKeyring::Alice.public(),
+            Origin::signed(signer.clone()),
+            AccountKeyring::Alice.to_account_id(),
             50,
-            signer,
+            signer.clone(),
             call_hash.clone()
         )
         .is_ok());
 
         assert!(SubstrateeRegistry::unshield_funds(
-            Origin::signed(signer),
-            AccountKeyring::Alice.public(),
+            Origin::signed(signer.clone()),
+            AccountKeyring::Alice.to_account_id(),
             50,
             signer,
             call_hash.clone()

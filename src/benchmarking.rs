@@ -17,7 +17,7 @@
 
 //! Teerex pallet benchmarking
 
-#![cfg(feature = "runtime-benchmarks")]
+#![cfg(any(test, feature = "runtime-benchmarks"))]
 
 use super::*;
 
@@ -26,12 +26,8 @@ use frame_system::RawOrigin;
 
 use sp_runtime::traits::CheckedConversion;
 
-use crate::test_utils::{consts::URL, ias::IAS_SETUPS};
+use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
 use crate::Pallet as Teerex;
-
-pub fn get_signer<AccountId: From<[u8; 32]>>(pubkey: &[u8; 32]) -> AccountId {
-    AccountId::from(*pubkey)
-}
 
 benchmarks! {
     where_clause {  where T::AccountId: From<[u8; 32]> }
@@ -52,8 +48,7 @@ benchmarks! {
 use crate::{Config, Module as PalletModule};
 
 #[cfg(test)]
-frame_benchmarking::impl_benchmark_test_suite!(
-    PalletModule,
-    crate::mock::new_test_ext(),
-    crate::mock::Test,
-);
+use frame_benchmarking::impl_benchmark_test_suite;
+
+#[cfg(test)]
+impl_benchmark_test_suite!(PalletModule, crate::mock::new_test_ext(), crate::mock::Test,);
