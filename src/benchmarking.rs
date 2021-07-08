@@ -29,11 +29,19 @@ use sp_runtime::traits::CheckedConversion;
 use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
 use crate::Pallet as Teerex;
 
+fn ensure_not_skipping_ra_check() {
+    if cfg!(feature = "skip-ias-check") {
+        panic!("Benchmark does not allow the `skip-ias-check` flag.");
+    };
+}
+
 benchmarks! {
     where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
         let i in 0 .. (IAS_SETUPS.len() as u32 - 1);
         let setup = IAS_SETUPS[i as usize];
+
+        ensure_not_skipping_ra_check();
 
         timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
         let signer: T::AccountId = get_signer(setup.signer_pub);
