@@ -26,7 +26,7 @@ use frame_system::RawOrigin;
 
 use sp_runtime::traits::CheckedConversion;
 
-use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
+use crate::test_utils::{consts::URL, get_signer, ias::TEST4_SETUP};
 use crate::Pallet as Teerex;
 
 fn ensure_not_skipping_ra_check() {
@@ -70,22 +70,19 @@ benchmarks! {
     // * enclave already exists
     where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
-        let i in 0 .. (IAS_SETUPS.len() as u32 - 1);
-        let setup = IAS_SETUPS[i as usize];
         ensure_not_skipping_ra_check();
-
-        timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
-        let signer: T::AccountId = get_signer(setup.signer_pub);
+        timestamp::Pallet::<T>::set_timestamp(TEST4_SETUP.timestamp.checked_into().unwrap());
+        let signer: T::AccountId = get_signer(TEST4_SETUP.signer_pub);
 
         // simply register the enclave before to make sure it already
         // exists when running the benchmark
         Teerex::<T>::register_enclave(
             RawOrigin::Signed(signer.clone()).into(),
-            setup.cert.to_vec(),
+            TEST4_SETUP.cert.to_vec(),
             URL.to_vec()
         ).unwrap();
 
-    }: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
+    }: _(RawOrigin::Signed(signer), TEST4_SETUP.cert.to_vec(), URL.to_vec())
     verify {
         assert_eq!(Teerex::<T>::enclave_count(), 1);
     }

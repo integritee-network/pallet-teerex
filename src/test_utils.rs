@@ -39,8 +39,6 @@ pub mod ias {
         pub timestamp: u64,
     }
 
-    pub const IAS_SETUPS: [IasSetup; 4] = [TEST4_SETUP, TEST5_SETUP, TEST6_SETUP, TEST7_SETUP];
-
     pub const TEST4_SETUP: IasSetup = IasSetup {
         cert: TEST4_CERT,
         signer_pub: TEST4_SIGNER_PUB,
@@ -48,6 +46,8 @@ pub mod ias {
         timestamp: TEST4_TIMESTAMP,
     };
 
+    // todo: migrate tests to use IasSetup
+    #[allow(unused)]
     pub const TEST5_SETUP: IasSetup = IasSetup {
         cert: TEST5_CERT,
         signer_pub: TEST5_SIGNER_PUB,
@@ -55,6 +55,7 @@ pub mod ias {
         timestamp: TEST5_TIMESTAMP,
     };
 
+    #[allow(unused)]
     pub const TEST6_SETUP: IasSetup = IasSetup {
         cert: TEST6_CERT,
         signer_pub: TEST6_SIGNER_PUB,
@@ -62,6 +63,7 @@ pub mod ias {
         timestamp: TEST6_TIMESTAMP,
     };
 
+    #[allow(unused)]
     pub const TEST7_SETUP: IasSetup = IasSetup {
         cert: TEST7_CERT,
         signer_pub: TEST7_SIGNER_PUB,
