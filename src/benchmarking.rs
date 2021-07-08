@@ -36,6 +36,14 @@ fn ensure_not_skipping_ra_check() {
 }
 
 benchmarks! {
+    // Benchmark `register` enclave with the worst possible conditions
+    // * remote attestation is valid
+    // * enclave already exists
+    //
+    // Note: The storage-map structure has the following complexity for updating a value:
+    //   DB Reads: O(1) Encoding: O(1) DB Writes: O(1)
+    //
+    // Hence, it does not matter how many other enclaves already exist.
     where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
         let i in 0 .. (IAS_SETUPS.len() as u32 - 1);
@@ -45,6 +53,14 @@ benchmarks! {
 
         timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
         let signer: T::AccountId = get_signer(setup.signer_pub);
+
+        // simply register the enclave before to make sure it already
+        // exists when running the benchmark
+        Teerex::<T>::register_enclave(
+            RawOrigin::Signed(signer.clone()).into(),
+            setup.cert.to_vec(),
+            URL.to_vec()
+        ).unwrap();
 
     }: _(RawOrigin::Signed(signer), setup.cert.to_vec(), URL.to_vec())
     verify {
