@@ -118,7 +118,7 @@ decl_module! {
         fn deposit_event() = default;
 
         // the substraTEE-worker wants to register his enclave
-        #[weight = (<T as Config>::WeightInfo::register_enclave(), DispatchClass::Operational, Pays::Yes)]
+        #[weight = (<T as Config>::WeightInfo::register_enclave(), DispatchClass::Normal, Pays::Yes)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             log::info!("substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
@@ -144,7 +144,7 @@ decl_module! {
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
-        #[weight = (<T as Config>::WeightInfo::unregister_enclave(), DispatchClass::Operational, Pays::Yes)]
+        #[weight = (<T as Config>::WeightInfo::unregister_enclave(), DispatchClass::Normal, Pays::Yes)]
         pub fn unregister_enclave(origin) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -153,7 +153,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = (<T as Config>::WeightInfo::call_worker(), DispatchClass::Operational, Pays::Yes)]
+        #[weight = (<T as Config>::WeightInfo::call_worker(), DispatchClass::Normal, Pays::Yes)]
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
             log::info!("call_worker with {:?}", request);
@@ -162,7 +162,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed call to confirm a state update
-        #[weight = (<T as Config>::WeightInfo::confirm_call(), DispatchClass::Operational, Pays::Yes)]
+        #[weight = (<T as Config>::WeightInfo::confirm_call(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
@@ -177,7 +177,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed block to confirm a state update
-        #[weight = (<T as Config>::WeightInfo::confirm_block(), DispatchClass::Operational, Pays::Yes)]
+        #[weight = (<T as Config>::WeightInfo::confirm_block(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
@@ -194,7 +194,7 @@ decl_module! {
         /// Sent by a client who requests to get shielded funds managed by an enclave. For this on-chain balance is sent to the bonding_account of the enclave.
         /// The bonding_account does not have a private key as the balance on this account is exclusively managed from withing the pallet-substratee-registry.
         /// Note: The bonding_account is bit-equivalent to the worker shard.
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn shield_funds(origin, incognito_account_encrypted: Vec<u8>, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             T::Currency::transfer(&sender, &bonding_account, amount, ExistenceRequirement::AllowDeath)?;
@@ -203,7 +203,7 @@ decl_module! {
         }
 
         /// Sent by enclaves only as a result of an `unshield` request from a client to an enclave.
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
