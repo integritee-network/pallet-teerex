@@ -19,11 +19,11 @@
 use crate as substratee_registry;
 use frame_support::parameter_types;
 use frame_system as system;
-use sp_core::{sr25519, H256};
+use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
     generic,
-    traits::{BlakeTwo256, IdentityLookup, Verify},
+    traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
 use substratee_registry::Config;
 
@@ -132,7 +132,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(AccountKeyring::Alice.public(), 1 << 60)],
+        balances: vec![(AccountKeyring::Alice.to_account_id(), 1 << 60)],
     }
     .assimilate_storage(&mut t)
     .unwrap();
@@ -142,6 +142,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 /// The signature type used by accounts/transactions.
-pub type Signature = sr25519::Signature;
+pub type Signature = sp_runtime::MultiSignature;
 /// An identifier for an account on this system.
-pub type AccountId = <Signature as Verify>::Signer;
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
