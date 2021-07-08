@@ -59,13 +59,13 @@ fn assert_latest_worker_update<T: Config>(
 }
 
 benchmarks! {
-    // Note: The storage-map structure has the following complexity for updating 1
+    // Note: The storage-map structure has the following complexity for updating:
     //   DB Reads: O(1) Encoding: O(1) DB Writes: O(1)
     //
-    // Hence, it does not matter how many other enclaves are registered for most of the tests.
+    // Hence, it does not matter how many other enclaves are registered for the benchmark.
 
 
-    // Benchmark `register_enclave` with the worst possible conditions
+    // Benchmark `register_enclave` with the worst possible conditions:
     // * remote attestation is valid
     // * enclave already exists
     where_clause {  where T::AccountId: From<[u8; 32]> }
@@ -87,7 +87,7 @@ benchmarks! {
         assert_eq!(Teerex::<T>::enclave_count(), 1);
     }
 
-    // Benchmark `unregister_enclave` enclave with the worst possible conditions
+    // Benchmark `unregister_enclave` enclave with the worst possible conditions:
     // * enclave exists
     // * enclave is not the most recently registered enclave
     unregister_enclave {
@@ -101,7 +101,7 @@ benchmarks! {
         assert_eq!(Teerex::<T>::enclave_count(), enclave_count as u64 - 1);
     }
 
-    // Benchmark `unregister_enclave` there are no worst conditions. The benchmark showed that
+    // Benchmark `call_worker`. There are no worst conditions. The benchmark showed that
     // execution time is constant irrespective of cyphertext size.
     call_worker {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
