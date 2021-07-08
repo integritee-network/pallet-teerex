@@ -82,6 +82,18 @@ benchmarks! {
     verify {
         assert_eq!(Teerex::<T>::enclave_count(), 1);
     }
+
+    where_clause { where T::AccountId: UncheckedFrom<H256> + From<[u8; 32]>}
+    unregister_enclave {
+        let i in 0..1000;
+        let accounts: Vec<T::AccountId> = random_accounts::<T>(i);
+        add_enclaves_to_registry::<T>(&accounts);
+
+    }: _(RawOrigin::Signed(accounts[0].clone()))
+    verify {
+        assert!(!crate::EnclaveIndex::<T>::contains_key(&accounts[0]));
+        assert_eq!(Teerex::<T>::enclave_count(), i as u64 - 1);
+    }
 }
 
 #[cfg(test)]
