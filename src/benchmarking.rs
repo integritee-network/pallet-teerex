@@ -35,7 +35,7 @@ fn ensure_not_skipping_ra_check() {
     };
 }
 
-fn random_accounts<T: Config>(amount: u32) -> Vec<T::AccountId> {
+fn generate_accounts<T: Config>(amount: u32) -> Vec<T::AccountId> {
     (0..amount).map(|n| account("dummy name", n, n)).collect()
 }
 
@@ -95,7 +95,7 @@ benchmarks! {
     // * enclave is not the most recently registered enclave
     unregister_enclave {
         let enclave_count = 3;
-        let accounts: Vec<T::AccountId> = random_accounts::<T>(enclave_count);
+        let accounts: Vec<T::AccountId> = generate_accounts::<T>(enclave_count);
         add_enclaves_to_registry::<T>(&accounts);
 
     }: _(RawOrigin::Signed(accounts[0].clone()))
@@ -107,7 +107,7 @@ benchmarks! {
     // Benchmark `confirm_call` with the worst possible conditions
     // * sender enclave is registered
     confirm_call {
-        let accounts: Vec<T::AccountId> = random_accounts::<T>(1);
+        let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
         add_enclaves_to_registry::<T>(&accounts);
 
         let shard: ShardIdentifier = [1; 32].into();
@@ -122,7 +122,7 @@ benchmarks! {
     // Benchmark `confirm_block` with the worst possible conditions
     // * sender enclave is registered
     confirm_block {
-        let accounts: Vec<T::AccountId> = random_accounts::<T>(1);
+        let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
         add_enclaves_to_registry::<T>(&accounts);
 
         let shard: ShardIdentifier = [1; 32].into();
