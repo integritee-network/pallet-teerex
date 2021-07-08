@@ -27,7 +27,10 @@ use sp_runtime::{
 };
 use substratee_registry::Config;
 
+pub type Signature = sp_runtime::MultiSignature;
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+
 pub type BlockNumber = u32;
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -141,8 +144,3 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     ext.execute_with(|| System::set_block_number(1));
     ext
 }
-
-/// The signature type used by accounts/transactions.
-pub type Signature = sp_runtime::MultiSignature;
-/// An identifier for an account on this system.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;

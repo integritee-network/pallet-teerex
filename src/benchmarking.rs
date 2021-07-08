@@ -108,7 +108,7 @@ benchmarks! {
         let req = Request { shard: Default::default(), cyphertext: vec![1u8; 2000]};
     }: _(RawOrigin::Signed(accounts[0].clone()), req)
 
-    // Benchmark `confirm_call` with the worst possible conditions
+    // Benchmark `confirm_call` with the worst possible conditions:
     // * sender enclave is registered
     confirm_call {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
@@ -123,7 +123,7 @@ benchmarks! {
         assert_latest_worker_update::<T>(&accounts[0], &shard, ipfs_hash)
     }
 
-    // Benchmark `confirm_block` with the worst possible conditions
+    // Benchmark `confirm_block` with the worst possible conditions:
     // * sender enclave is registered
     confirm_block {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
