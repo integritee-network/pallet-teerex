@@ -104,6 +104,13 @@ benchmarks! {
         assert_eq!(Teerex::<T>::enclave_count(), enclave_count as u64 - 1);
     }
 
+    // Benchmark `unregister_enclave` there are no worst conditions. The benchmark showed that
+    // execution time is constant irrespective of cyphertext size.
+    call_worker {
+        let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
+        let req = Request { shard: Default::default(), cyphertext: vec![1u8; 2000]};
+    }: _(RawOrigin::Signed(accounts[0].clone()), req)
+
     // Benchmark `confirm_call` with the worst possible conditions
     // * sender enclave is registered
     confirm_call {
