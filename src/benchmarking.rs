@@ -21,10 +21,9 @@
 
 use super::*;
 
-use frame_benchmarking::benchmarks;
+use frame_benchmarking::{account, benchmarks};
 use frame_system::RawOrigin;
 
-use sp_core::crypto::UncheckedFrom;
 use sp_runtime::traits::CheckedConversion;
 
 use crate::test_utils::{consts::URL, get_signer, ias::IAS_SETUPS};
@@ -36,13 +35,8 @@ fn ensure_not_skipping_ra_check() {
     };
 }
 
-fn random_accounts<T: Config>(amount: u32) -> Vec<T::AccountId>
-where
-    T::AccountId: UncheckedFrom<H256>,
-{
-    (0..amount)
-        .map(|_n| T::AccountId::unchecked_from(H256::random()))
-        .collect()
+fn random_accounts<T: Config>(amount: u32) -> Vec<T::AccountId> {
+    (0..amount).map(|n| account("dummy name", n, n)).collect()
 }
 
 fn add_enclaves_to_registry<T: Config>(accounts: &Vec<T::AccountId>) {
@@ -52,19 +46,19 @@ fn add_enclaves_to_registry<T: Config>(accounts: &Vec<T::AccountId>) {
 }
 
 benchmarks! {
-    // Benchmark `register` enclave with the worst possible conditions
-    // * remote attestation is valid
-    // * enclave already exists
-    //
-    // Note: The storage-map structure has the following complexity for updating a value:
+    // Note: The storage-map structure has the following complexity for updating 1
     //   DB Reads: O(1) Encoding: O(1) DB Writes: O(1)
     //
-    // Hence, it does not matter how many other enclaves already exist.
+    // Hence, it does not matter how many other enclaves are registered for most of the tests.
+
+
+    // Benchmark `register_enclave` with the worst possible conditions
+    // * remote attestation is valid
+    // * enclave already exists
     where_clause {  where T::AccountId: From<[u8; 32]> }
     register_enclave {
         let i in 0 .. (IAS_SETUPS.len() as u32 - 1);
         let setup = IAS_SETUPS[i as usize];
-
         ensure_not_skipping_ra_check();
 
         timestamp::Pallet::<T>::set_timestamp(setup.timestamp.checked_into().unwrap());
@@ -83,16 +77,18 @@ benchmarks! {
         assert_eq!(Teerex::<T>::enclave_count(), 1);
     }
 
-    where_clause { where T::AccountId: UncheckedFrom<H256> + From<[u8; 32]>}
+    // Benchmark `unregister_enclave` enclave with the worst possible conditions
+    // * enclave exists
+    // * enclave is not the most recently registered enclave
     unregister_enclave {
-        let i in 0..1000;
-        let accounts: Vec<T::AccountId> = random_accounts::<T>(i);
+        let enclave_count = 3;
+        let accounts: Vec<T::AccountId> = random_accounts::<T>(enclave_count);
         add_enclaves_to_registry::<T>(&accounts);
 
     }: _(RawOrigin::Signed(accounts[0].clone()))
     verify {
         assert!(!crate::EnclaveIndex::<T>::contains_key(&accounts[0]));
-        assert_eq!(Teerex::<T>::enclave_count(), i as u64 - 1);
+        assert_eq!(Teerex::<T>::enclave_count(), enclave_count as u64 - 1);
     }
 }
 
