@@ -33,10 +33,13 @@ use sp_std::str;
 #[cfg(not(feature = "skip-ias-check"))]
 use ias_verify::{verify_ias_report, SgxReport};
 
+use crate::weights::WeightInfo;
+
 pub trait Config: system::Config + timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
     type Currency: Currency<<Self as system::Config>::AccountId>;
     type MomentsPerDay: Get<Self::Moment>;
+    type WeightInfo: WeightInfo;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -115,7 +118,7 @@ decl_module! {
         fn deposit_event() = default;
 
         // the substraTEE-worker wants to register his enclave
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (<T as Config>::WeightInfo::register_enclave(), DispatchClass::Normal, Pays::Yes)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             log::info!("substraTEE_registry: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
@@ -133,15 +136,15 @@ decl_module! {
             #[cfg(feature = "skip-ias-check")]
             let enclave = Enclave::new(sender.clone(), Default::default(), <timestamp::Pallet<T>>::get().saturated_into(), worker_url.clone());
 
-			Self::add_enclave(&sender, &enclave)?;
-			Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
-			Ok(())
+            Self::add_enclave(&sender, &enclave)?;
+            Self::deposit_event(RawEvent::AddedEnclave(sender, worker_url));
+            Ok(())
         }
 
         // TODO: we can't expect a dead enclave to unregister itself
         // alternative: allow anyone to unregister an enclave that hasn't recently supplied a RA
         // such a call should be feeless if successful
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (<T as Config>::WeightInfo::unregister_enclave(), DispatchClass::Normal, Pays::Yes)]
         pub fn unregister_enclave(origin) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -150,7 +153,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (<T as Config>::WeightInfo::call_worker(), DispatchClass::Normal, Pays::Yes)]
         pub fn call_worker(origin, request: Request) -> DispatchResult {
             let _sender = ensure_signed(origin)?;
             log::info!("call_worker with {:?}", request);
@@ -159,7 +162,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed call to confirm a state update
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (<T as Config>::WeightInfo::confirm_call(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
@@ -174,7 +177,7 @@ decl_module! {
         }
 
         // the substraTEE-worker calls this function for every processed block to confirm a state update
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (<T as Config>::WeightInfo::confirm_block(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
@@ -191,7 +194,7 @@ decl_module! {
         /// Sent by a client who requests to get shielded funds managed by an enclave. For this on-chain balance is sent to the bonding_account of the enclave.
         /// The bonding_account does not have a private key as the balance on this account is exclusively managed from withing the pallet-substratee-registry.
         /// Note: The bonding_account is bit-equivalent to the worker shard.
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn shield_funds(origin, incognito_account_encrypted: Vec<u8>, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             T::Currency::transfer(&sender, &bonding_account, amount, ExistenceRequirement::AllowDeath)?;
@@ -200,7 +203,7 @@ decl_module! {
         }
 
         /// Sent by enclaves only as a result of an `unshield` request from a client to an enclave.
-        #[weight = (1000, DispatchClass::Operational, Pays::No)]
+        #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
@@ -288,14 +291,20 @@ impl<T: Config> Module<T> {
     }
 
     #[cfg(not(feature = "skip-ias-check"))]
-    fn verify_report(sender: &T::AccountId, ra_report: Vec<u8>) -> Result<SgxReport, sp_runtime::DispatchError> {
+    fn verify_report(
+        sender: &T::AccountId,
+        ra_report: Vec<u8>,
+    ) -> Result<SgxReport, sp_runtime::DispatchError> {
         let report = verify_ias_report(&ra_report)
             .map_err(|_| <Error<T>>::RemoteAttestationVerificationFailed)?;
         log::info!("RA Report: {:?}", report);
 
         let enclave_signer = T::AccountId::decode(&mut &report.pubkey[..])
             .map_err(|_| <Error<T>>::EnclaveSignerDecodeError)?;
-        ensure!(sender == &enclave_signer, <Error<T>>::SenderIsNotAttestedEnclave);
+        ensure!(
+            sender == &enclave_signer,
+            <Error<T>>::SenderIsNotAttestedEnclave
+        );
 
         // TODO: activate state checks as soon as we've fixed our setup
         // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
@@ -322,7 +331,10 @@ impl<T: Config> Module<T> {
     }
 }
 
+mod benchmarking;
 #[cfg(test)]
 mod mock;
+mod test_utils;
 #[cfg(test)]
 mod tests;
+pub mod weights;

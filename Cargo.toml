@@ -7,6 +7,7 @@ homepage = "https://integritee.network/"
 repository = "https://github.com/integritee-network/pallet-teerex/"
 license = "Apache-2.0"
 edition = "2018"
+resolver = "2"
 
 [workspace]
 members = [
@@ -16,6 +17,7 @@ members = [
 [dependencies]
 serde = { features = ['derive'], optional = true, version = '1.0.101' }
 log = { version = "0.4.14", default-features = false }
+hex-literal = { version = "0.3.2", optional = true }
 
 [dependencies.codec]
 default-features = false
@@ -26,11 +28,6 @@ version = '2.0.0'
 [dependencies.ias-verify]
 default-features = false
 path = './ias-verify'
-
-[dependencies.sp-std]
-default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
 
 [dependencies.frame-support]
 default-features = false
@@ -53,9 +50,33 @@ default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
+[dependencies.sp-runtime]
+default-features = false
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.sp-std]
+default-features = false
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+
+## benchmarking stuff
+[dependencies.frame-benchmarking]
+default-features = false
+optional = true
+git = "https://github.com/paritytech/substrate.git"
+branch = "master"
+
+[dependencies.pallet-balances]
+optional = true
+default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
 
@@ -63,11 +84,6 @@ branch = "master"
 hex-literal = "*"
 env_logger = "0.7.1"
 log = "*"
-
-[dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
@@ -90,10 +106,20 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'ias-verify/std',
-    'sp-std/std',
-    'sp-io/std',
     'sp-core/std',
-    'timestamp/std'
+    'sp-io/std',
+    'sp-runtime/std',
+    'sp-std/std',
+    'timestamp/std',
+    # benchmarking stuff
+    'frame-benchmarking/std',
+    "pallet-balances/std",
+]
+runtime-benchmarks = [
+    'frame-benchmarking',
+    "hex-literal",
+    "pallet-balances",
+    "timestamp/runtime-benchmarks"
 ]
 # allow workers to register without remote attestation for dev purposes
 skip-ias-check = []

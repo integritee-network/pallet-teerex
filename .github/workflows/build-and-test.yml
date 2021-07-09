@@ -58,4 +58,4 @@ jobs:
         with:
           submodules: 'true'
       - name: test
-        run: cargo test --all
+        run: cargo test --all --features runtime-benchmarks
