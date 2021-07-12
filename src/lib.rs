@@ -33,7 +33,7 @@ use sp_std::str;
 #[cfg(not(feature = "skip-ias-check"))]
 use ias_verify::{verify_ias_report, SgxReport};
 
-use crate::weights::WeightInfo;
+pub use crate::weights::WeightInfo;
 
 pub trait Config: system::Config + timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
