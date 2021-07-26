@@ -126,7 +126,7 @@ pub mod consts {
     pub const TEST6_TIMESTAMP: u64 = 1587900233000;
     pub const TEST7_TIMESTAMP: u64 = 1587900450000;
 
-    #[cfg(test)]
+    #[cfg(all(test, not(feature = "skip-ias-check")))]
     pub const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
 
     pub const URL: &[u8] = &[
