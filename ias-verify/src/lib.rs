@@ -187,21 +187,19 @@ pub struct NetscapeComment<'a> {
 }
 pub struct PubKey<'a>(&'a [u8]);
 
+pub const PRIME256V1_OID: &[u8; 10] = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
 impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
     type Error = &'static str;
 
     fn try_from(value: CertDer<'a>) -> Result<Self, Self::Error> {
         // Before we reach here, the runtime already verified the extrinsic is properly signed by the extrinsic sender
         // Search for Public Key prime256v1 OID
-
         let cert_der = value.0;
 
-        let prime256v1_oid = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
-
         let mut offset = cert_der
-            .windows(prime256v1_oid.len())
-            .position(|window| window == prime256v1_oid)
-            .ok_or("Certificate does not contain 'prime256v1'")?;
+            .windows(PRIME256V1_OID.len())
+            .position(|window| window == PRIME256V1_OID)
+            .ok_or("Certificate does not contain 'PRIME256V1_OID'")?;
 
         offset += 11; // 10 + TAG (0x03)
 
@@ -218,6 +216,10 @@ impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
     }
 }
 
+pub const NS_CMT_OID: &[u8; 11] = &[
+    0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
+];
+
 impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
     type Error = &'static str;
 
@@ -225,12 +227,9 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
         // Search for Netscape Comment OID
         let cert_der = value.0;
 
-        let ns_cmt_oid = &[
-            0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
-        ];
         let mut offset = cert_der
-            .windows(ns_cmt_oid.len())
-            .position(|window| window == ns_cmt_oid)
+            .windows(NS_CMT_OID.len())
+            .position(|window| window == NS_CMT_OID)
             .ok_or("Certificate does not contain 'ns_cmt_oid'")?;
 
         offset += 12; // 11 + TAG (0x04)
