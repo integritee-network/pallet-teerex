@@ -17,7 +17,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::netscape_comment::NetscapeComment;
+use crate::netscape_comment::{NetscapeComment, VerifyCert};
 use crate::utils::{length_from_raw_data, safe_indexing, safe_indexing_one};
 use chrono::prelude::*;
 use codec::{Decode, Encode};
@@ -197,45 +197,8 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     let cert = CertDer(cert_der);
     let netscape = NetscapeComment::try_from(cert)?;
 
-    let chain: Vec<&[u8]> = Vec::new();
-    // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
-    // chain wasm update or by some sudo call
-    let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
-
-    let sig_cert = webpki::EndEntityCert::from(&netscape.sig_cert).map_err(|_| "Bad der")?;
-
-    match sig_cert.verify_is_valid_tls_server_cert(
-        SUPPORTED_SIG_ALGS,
-        &IAS_SERVER_ROOTS,
-        &chain,
-        now_func,
-    ) {
-        Ok(()) => {
-            #[cfg(test)]
-            println!("CA is valid");
-        }
-        Err(_e) => {
-            #[cfg(test)]
-            println!("CA ERROR: {}", _e);
-            return Err("CA verification failed");
-        }
-    };
-
-    match sig_cert.verify_signature(
-        &webpki::RSA_PKCS1_2048_8192_SHA256,
-        netscape.attestation_raw,
-        &netscape.sig,
-    ) {
-        Ok(()) => {
-            #[cfg(test)]
-            println!("IAS signature is valid");
-        }
-        Err(_e) => {
-            #[cfg(test)]
-            println!("RSA Signature ERROR: {}", _e);
-            return Err("bad signature");
-        }
-    }
+    netscape.verify_signature()?;
+    netscape.verify_server_cert()?;
 
     parse_report(netscape.attestation_raw)
 }
