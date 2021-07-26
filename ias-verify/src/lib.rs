@@ -17,6 +17,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use crate::netscape_comment::NetscapeComment;
+use crate::utils::{length_from_raw_data, safe_indexing, safe_indexing_one};
 use chrono::prelude::*;
 use codec::{Decode, Encode};
 use frame_support::ensure;
@@ -25,7 +27,9 @@ use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 use std::convert::TryFrom;
 
+mod netscape_comment;
 mod tests;
+mod utils;
 
 const SGX_REPORT_DATA_SIZE: usize = 64;
 #[derive(Encode, Decode, Copy, Clone)]
@@ -152,39 +156,7 @@ pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTr
 
 ]);
 
-// prevents panics in case of index out of bounds
-fn safe_indexing(data: &[u8], start: usize, end: usize) -> Result<&[u8], &'static str> {
-    if start > end {
-        return Err("Illegal indexing");
-    }
-    if data.len() < end {
-        return Err("Index would be out of bounds");
-    }
-    Ok(&data[start..end])
-}
-fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
-    if data.len() < idx {
-        return Err("Index would be out of bounds");
-    }
-    Ok(data[idx])
-}
-
-fn length_from_raw_data(data: &[u8], offset: &mut usize) -> Result<usize, &'static str> {
-    let mut len = safe_indexing_one(data, *offset)? as usize;
-    if len > 0x80 {
-        len = (safe_indexing_one(data, *offset + 1)? as usize) * 0x100
-            + (safe_indexing_one(data, *offset + 2)? as usize);
-        *offset += 2;
-    }
-    Ok(len)
-}
-
 pub struct CertDer<'a>(&'a [u8]);
-pub struct NetscapeComment<'a> {
-    pub attestation_raw: &'a [u8],
-    pub sig: Vec<u8>,
-    pub sig_cert: Vec<u8>,
-}
 pub struct PubKey<'a>(&'a [u8]);
 
 pub const PRIME256V1_OID: &[u8; 10] = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
@@ -192,8 +164,6 @@ impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
     type Error = &'static str;
 
     fn try_from(value: CertDer<'a>) -> Result<Self, Self::Error> {
-        // Before we reach here, the runtime already verified the extrinsic is properly signed by the extrinsic sender
-        // Search for Public Key prime256v1 OID
         let cert_der = value.0;
 
         let mut offset = cert_der
@@ -216,51 +186,11 @@ impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
     }
 }
 
-pub const NS_CMT_OID: &[u8; 11] = &[
-    0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
-];
-
-impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
-    type Error = &'static str;
-
-    fn try_from(value: CertDer<'a>) -> Result<Self, Self::Error> {
-        // Search for Netscape Comment OID
-        let cert_der = value.0;
-
-        let mut offset = cert_der
-            .windows(NS_CMT_OID.len())
-            .position(|window| window == NS_CMT_OID)
-            .ok_or("Certificate does not contain 'ns_cmt_oid'")?;
-
-        offset += 12; // 11 + TAG (0x04)
-
-        #[cfg(test)]
-        println!("netscape");
-        // Obtain Netscape Comment length
-        let mut len = length_from_raw_data(cert_der, &mut offset)?;
-        // Obtain Netscape Comment
-        offset += 1;
-        let netscape_raw = safe_indexing(cert_der, offset, offset + len)?
-            .split(|x| *x == 0x7C)
-            .collect::<Vec<&[u8]>>();
-
-        ensure!(netscape_raw.len() == 3, "Invalid netscape payload");
-
-        let sig = base64::decode(netscape_raw[1]).map_err(|_| "Signature Decoding Error")?;
-
-        let sig_cert = base64::decode_config(netscape_raw[2], base64::STANDARD)
-            .map_err(|_| "Cert Decoding Error")?;
-
-        Ok(NetscapeComment {
-            attestation_raw: netscape_raw[0],
-            sig: sig,
-            sig_cert: sig_cert,
-        })
-    }
-}
-
 // make sure this function doesn't panic!
 pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
+    // Before we reach here, the runtime already verified the extrinsic is properly signed by the extrinsic sender
+    // Search for Public Key prime256v1 OID
+
     #[cfg(test)]
     println!("verifyRA: start verifying RA cert");
 
