@@ -29,7 +29,7 @@ pub fn length_from_raw_data(data: &[u8], offset: &mut usize) -> Result<usize, &'
 #[cfg(test)]
 mod test {
     use super::*;
-    use frame_support::assert_err;
+    use frame_support::{assert_err, assert_ok};
 
     #[test]
     fn safe_indexing_works() {
@@ -46,5 +46,12 @@ mod test {
         // Todo add security audit context
         let data: [u8; 7] = [0, 1, 2, 3, 4, 5, 6];
         assert_err!(safe_indexing_one(&data, data.len()), "Index out of bounds");
+    }
+
+    #[test]
+    fn start_equals_length_returns_empty_slice() {
+        // Todo add security audit context
+        let data: [u8; 7] = [0, 1, 2, 3, 4, 5, 6];
+        assert_ok!(safe_indexing(&data, data.len(), data.len()), &[][..]);
     }
 }
