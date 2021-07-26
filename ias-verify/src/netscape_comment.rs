@@ -1,5 +1,5 @@
 use crate::utils::{length_from_raw_data, safe_indexing, safe_indexing_one};
-use crate::CertDer;
+use crate::{CertDer, IAS_SERVER_ROOTS, SUPPORTED_SIG_ALGS};
 use frame_support::ensure;
 use std::convert::TryFrom;
 
@@ -49,5 +49,60 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
             sig: sig,
             sig_cert: sig_cert,
         })
+    }
+}
+
+pub trait VerifyCert {
+    fn verify_signature(&self) -> Result<(), &'static str>;
+    fn verify_server_cert(&self) -> Result<(), &'static str>;
+}
+
+impl VerifyCert for NetscapeComment<'_> {
+    fn verify_signature(&self) -> Result<(), &'static str> {
+        let sig_cert = webpki::EndEntityCert::from(&self.sig_cert).map_err(|_| "Bad der")?;
+
+        match sig_cert.verify_signature(
+            &webpki::RSA_PKCS1_2048_8192_SHA256,
+            self.attestation_raw,
+            &self.sig,
+        ) {
+            Ok(()) => {
+                #[cfg(test)]
+                println!("IAS signature is valid");
+                Ok(())
+            }
+            Err(_e) => {
+                #[cfg(test)]
+                println!("RSA Signature ERROR: {}", _e);
+                Err("bad signature")
+            }
+        }
+    }
+
+    fn verify_server_cert(&self) -> Result<(), &'static str> {
+        let sig_cert = webpki::EndEntityCert::from(&self.sig_cert).map_err(|_| "Bad der")?;
+
+        let chain: Vec<&[u8]> = Vec::new();
+        // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
+        // chain wasm update or by some sudo call
+        let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
+
+        match sig_cert.verify_is_valid_tls_server_cert(
+            SUPPORTED_SIG_ALGS,
+            &IAS_SERVER_ROOTS,
+            &chain,
+            now_func,
+        ) {
+            Ok(()) => {
+                #[cfg(test)]
+                println!("CA is valid");
+                Ok(())
+            }
+            Err(e) => {
+                #[cfg(test)]
+                println!("CA ERROR: {}", e);
+                Err("CA verification failed")
+            }
+        }
     }
 }
