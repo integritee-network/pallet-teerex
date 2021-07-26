@@ -182,8 +182,8 @@ fn length_from_raw_data(data: &[u8], offset: &mut usize) -> Result<usize, &'stat
 pub struct CertDer<'a>(&'a [u8]);
 pub struct NetscapeComment<'a> {
     pub attestation_raw: &'a [u8],
-    pub sig_raw: &'a [u8],
-    pub sig_cert_raw: &'a [u8],
+    pub sig: Vec<u8>,
+    pub sig_cert: Vec<u8>,
 }
 pub struct PubKey<'a>(&'a [u8]);
 
@@ -246,10 +246,15 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
 
         ensure!(netscape_raw.len() == 3, "Invalid netscape payload");
 
+        let sig = base64::decode(netscape_raw[1]).map_err(|_| "Signature Decoding Error")?;
+
+        let sig_cert = base64::decode_config(netscape_raw[2], base64::STANDARD)
+            .map_err(|_| "Cert Decoding Error")?;
+
         Ok(NetscapeComment {
             attestation_raw: netscape_raw[0],
-            sig_raw: netscape_raw[1],
-            sig_cert_raw: netscape_raw[2],
+            sig: sig,
+            sig_cert: sig_cert,
         })
     }
 }
@@ -262,24 +267,12 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     let cert = CertDer(cert_der);
     let netscape = NetscapeComment::try_from(cert)?;
 
-    let sig = match base64::decode(netscape.sig_raw) {
-        Ok(m) => m,
-        Err(_) => return Err("Signature Decoding Error"),
-    };
-
-    let sig_cert_dec = match base64::decode_config(netscape.sig_cert_raw, base64::STANDARD) {
-        Ok(c) => c,
-        Err(_) => return Err("Cert Decoding Error"),
-    };
-    let sig_cert = match webpki::EndEntityCert::from(&sig_cert_dec) {
-        Ok(c) => c,
-        Err(_) => return Err("Bad DER"),
-    };
-
     let chain: Vec<&[u8]> = Vec::new();
     // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
     // chain wasm update or by some sudo call
     let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
+
+    let sig_cert = webpki::EndEntityCert::from(&netscape.sig_cert).map_err(|_| "Bad der")?;
 
     match sig_cert.verify_is_valid_tls_server_cert(
         SUPPORTED_SIG_ALGS,
@@ -301,7 +294,7 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     match sig_cert.verify_signature(
         &webpki::RSA_PKCS1_2048_8192_SHA256,
         netscape.attestation_raw,
-        &sig,
+        &netscape.sig,
     ) {
         Ok(()) => {
             #[cfg(test)]
