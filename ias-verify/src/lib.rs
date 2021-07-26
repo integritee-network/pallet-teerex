@@ -18,17 +18,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use chrono::prelude::*;
+use codec::{Decode, Encode};
+use frame_support::ensure;
+use serde_json::Value;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
-//use itertools::Itertools;
-//use log::*;
-//use serde_json::Value;
-//use sgx_types::*;
-//use sgx_ucrypto::SgxEccHandle;
-
-//use super::{SgxReport, SgxStatus};
-use codec::{Decode, Encode};
-use serde_json::Value;
+use std::convert::TryFrom;
 
 mod tests;
 
@@ -174,77 +169,112 @@ fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
     Ok(data[idx])
 }
 
+pub struct CertDer<'a>(&'a [u8]);
+pub struct NetscapeComment<'a> {
+    pub attestation_raw: &'a [u8],
+    pub sig_raw: &'a [u8],
+    pub sig_cert_raw: &'a [u8],
+}
+pub struct PubKey<'a>(&'a [u8]);
+
+impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
+    type Error = &'static str;
+
+    fn try_from(value: CertDer<'a>) -> Result<Self, Self::Error> {
+        // Before we reach here, the runtime already verified the extrinsic is properly signed by the extrinsic sender
+        // Search for Public Key prime256v1 OID
+
+        let cert_der = value.0;
+
+        let prime256v1_oid = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
+
+        let mut offset = match cert_der
+            .windows(prime256v1_oid.len())
+            .position(|window| window == prime256v1_oid)
+        {
+            Some(o) => o,
+            _ => return Err("Certificate to check is empty"),
+        };
+        offset += 11; // 10 + TAG (0x03)
+
+        // Obtain Public Key length
+        let mut len = safe_indexing_one(cert_der, offset)? as usize;
+        if len > 0x80 {
+            len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
+                + (safe_indexing_one(cert_der, offset + 2)? as usize);
+            offset += 2;
+        }
+
+        // Obtain Public Key
+        offset += 1;
+        let _pub_k = safe_indexing(cert_der, offset + 2, offset + len)?; // skip "00 04"
+
+        #[cfg(test)]
+        println!("verifyRA ephemeral public key: {:x?}", _pub_k);
+        Ok(PubKey(_pub_k))
+    }
+}
+
+impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
+    type Error = &'static str;
+
+    fn try_from(value: CertDer<'a>) -> Result<Self, Self::Error> {
+        // Search for Netscape Comment OID
+        let cert_der = value.0;
+
+        let ns_cmt_oid = &[
+            0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
+        ];
+        let mut offset = match cert_der
+            .windows(ns_cmt_oid.len())
+            .position(|window| window == ns_cmt_oid)
+        {
+            Some(o) => o,
+            _ => return Err("Certificate to check is empty"),
+        };
+        offset += 12; // 11 + TAG (0x04)
+
+        #[cfg(test)]
+        println!("netscape");
+        // Obtain Netscape Comment length
+        let mut len = safe_indexing_one(cert_der, offset)? as usize;
+
+        if len > 0x80 {
+            len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
+                + (safe_indexing_one(cert_der, offset + 2)? as usize);
+            offset += 2;
+        }
+
+        // Obtain Netscape Comment
+        offset += 1;
+        let netscape_raw = safe_indexing(cert_der, offset, offset + len)?
+            .split(|x| *x == 0x7C)
+            .collect::<Vec<&[u8]>>();
+
+        ensure!(netscape_raw.len() == 3, "Invalid netscape payload");
+
+        Ok(NetscapeComment {
+            attestation_raw: netscape_raw[0],
+            sig_raw: netscape_raw[1],
+            sig_cert_raw: netscape_raw[2],
+        })
+    }
+}
+
 // make sure this function doesn't panic!
 pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     #[cfg(test)]
     println!("verifyRA: start verifying RA cert");
-    // Before we reach here, the runtime already verifed the extrinsic is properly signed by the extrinsic sender
-    // Search for Public Key prime256v1 OID
-    let prime256v1_oid = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
 
-    let mut offset = match cert_der
-        .windows(prime256v1_oid.len())
-        .position(|window| window == prime256v1_oid)
-    {
-        Some(o) => o,
-        _ => return Err("Certificate to check is empty"),
-    };
-    offset += 11; // 10 + TAG (0x03)
+    let cert = CertDer(cert_der);
+    let netscape = NetscapeComment::try_from(cert)?;
 
-    // Obtain Public Key length
-    let mut len = safe_indexing_one(cert_der, offset)? as usize;
-    if len > 0x80 {
-        len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
-            + (safe_indexing_one(cert_der, offset + 2)? as usize);
-        offset += 2;
-    }
-
-    // Obtain Public Key
-    offset += 1;
-    let _pub_k = safe_indexing(cert_der, offset + 2, offset + len)?.to_vec(); // skip "00 04"
-
-    #[cfg(test)]
-    println!("verifyRA ephemeral public key: {:x?}", _pub_k);
-
-    // Search for Netscape Comment OID
-    let ns_cmt_oid = &[
-        0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
-    ];
-    let mut offset = match cert_der
-        .windows(ns_cmt_oid.len())
-        .position(|window| window == ns_cmt_oid)
-    {
-        Some(o) => o,
-        _ => return Err("Certificate to check is empty"),
-    };
-    offset += 12; // 11 + TAG (0x04)
-
-    #[cfg(test)]
-    println!("netscape");
-    // Obtain Netscape Comment length
-    let mut len = safe_indexing_one(cert_der, offset)? as usize;
-
-    if len > 0x80 {
-        len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
-            + (safe_indexing_one(cert_der, offset + 2)? as usize);
-        offset += 2;
-    }
-
-    // Obtain Netscape Comment
-    offset += 1;
-    let payload = safe_indexing(cert_der, offset, offset + len)?.to_vec();
-
-    // Extract each field
-    let mut iter = payload.split(|x| *x == 0x7C);
-    let attn_report_raw = iter.next().unwrap();
-    let sig_raw = iter.next().unwrap();
-    let sig = match base64::decode(&sig_raw) {
+    let sig = match base64::decode(netscape.sig_raw) {
         Ok(m) => m,
         Err(_) => return Err("Signature Decoding Error"),
     };
 
-    let sig_cert_raw = iter.next().unwrap();
-    let sig_cert_dec = match base64::decode_config(&sig_cert_raw, base64::STANDARD) {
+    let sig_cert_dec = match base64::decode_config(netscape.sig_cert_raw, base64::STANDARD) {
         Ok(c) => c,
         Err(_) => return Err("Cert Decoding Error"),
     };
@@ -275,7 +305,11 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
         }
     };
 
-    match sig_cert.verify_signature(&webpki::RSA_PKCS1_2048_8192_SHA256, &attn_report_raw, &sig) {
+    match sig_cert.verify_signature(
+        &webpki::RSA_PKCS1_2048_8192_SHA256,
+        netscape.attestation_raw,
+        &sig,
+    ) {
         Ok(()) => {
             #[cfg(test)]
             println!("IAS signature is valid");
@@ -287,7 +321,7 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
         }
     }
 
-    parse_report(attn_report_raw)
+    parse_report(netscape.attestation_raw)
 }
 
 fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
