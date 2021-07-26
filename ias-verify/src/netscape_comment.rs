@@ -1,4 +1,4 @@
-use crate::utils::{length_from_raw_data, safe_indexing, safe_indexing_one};
+use crate::utils::{length_from_raw_data, safe_indexing};
 use crate::{CertDer, IAS_SERVER_ROOTS, SUPPORTED_SIG_ALGS};
 use frame_support::ensure;
 use std::convert::TryFrom;
@@ -7,6 +7,7 @@ pub struct NetscapeComment<'a> {
     pub attestation_raw: &'a [u8],
     pub sig: Vec<u8>,
     pub sig_cert: Vec<u8>,
+    pub entity_cert: Option<webpki::EndEntityCert<'a>>,
 }
 
 pub const NS_CMT_OID: &[u8; 11] = &[
@@ -30,7 +31,7 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
         #[cfg(test)]
         println!("netscape");
         // Obtain Netscape Comment length
-        let mut len = length_from_raw_data(cert_der, &mut offset)?;
+        let len = length_from_raw_data(cert_der, &mut offset)?;
         // Obtain Netscape Comment
         offset += 1;
         let netscape_raw = safe_indexing(cert_der, offset, offset + len)?
@@ -48,61 +49,54 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
             attestation_raw: netscape_raw[0],
             sig: sig,
             sig_cert: sig_cert,
+            entity_cert: None,
         })
     }
 }
 
-pub trait VerifyCert {
-    fn verify_signature(&self) -> Result<(), &'static str>;
-    fn verify_server_cert(&self) -> Result<(), &'static str>;
-}
-
-impl VerifyCert for NetscapeComment<'_> {
-    fn verify_signature(&self) -> Result<(), &'static str> {
-        let sig_cert = webpki::EndEntityCert::from(&self.sig_cert).map_err(|_| "Bad der")?;
-
-        match sig_cert.verify_signature(
-            &webpki::RSA_PKCS1_2048_8192_SHA256,
-            self.attestation_raw,
-            &self.sig,
-        ) {
-            Ok(()) => {
-                #[cfg(test)]
-                println!("IAS signature is valid");
-                Ok(())
-            }
-            Err(_e) => {
-                #[cfg(test)]
-                println!("RSA Signature ERROR: {}", _e);
-                Err("bad signature")
-            }
+pub fn verify_signature(
+    entity_cert: &webpki::EndEntityCert,
+    attestation_raw: &[u8],
+    signature: &[u8],
+) -> Result<(), &'static str> {
+    match entity_cert.verify_signature(
+        &webpki::RSA_PKCS1_2048_8192_SHA256,
+        attestation_raw,
+        signature,
+    ) {
+        Ok(()) => {
+            #[cfg(test)]
+            println!("IAS signature is valid");
+            Ok(())
+        }
+        Err(_e) => {
+            #[cfg(test)]
+            println!("RSA Signature ERROR: {}", _e);
+            Err("bad signature")
         }
     }
+}
 
-    fn verify_server_cert(&self) -> Result<(), &'static str> {
-        let sig_cert = webpki::EndEntityCert::from(&self.sig_cert).map_err(|_| "Bad der")?;
-
-        let chain: Vec<&[u8]> = Vec::new();
-        // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
-        // chain wasm update or by some sudo call
-        let now_func = webpki::Time::from_seconds_since_unix_epoch(1573419050);
-
-        match sig_cert.verify_is_valid_tls_server_cert(
-            SUPPORTED_SIG_ALGS,
-            &IAS_SERVER_ROOTS,
-            &chain,
-            now_func,
-        ) {
-            Ok(()) => {
-                #[cfg(test)]
-                println!("CA is valid");
-                Ok(())
-            }
-            Err(e) => {
-                #[cfg(test)]
-                println!("CA ERROR: {}", e);
-                Err("CA verification failed")
-            }
+pub fn verify_server_cert(
+    sig_cert: &webpki::EndEntityCert,
+    timestamp_valid_until: webpki::Time,
+) -> Result<(), &'static str> {
+    let chain: Vec<&[u8]> = Vec::new();
+    match sig_cert.verify_is_valid_tls_server_cert(
+        SUPPORTED_SIG_ALGS,
+        &IAS_SERVER_ROOTS,
+        &chain,
+        timestamp_valid_until,
+    ) {
+        Ok(()) => {
+            #[cfg(test)]
+            println!("CA is valid");
+            Ok(())
+        }
+        Err(_e) => {
+            #[cfg(test)]
+            println!("CA ERROR: {}", _e);
+            Err("CA verification failed")
         }
     }
 }

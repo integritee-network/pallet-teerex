@@ -17,7 +17,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::netscape_comment::{NetscapeComment, VerifyCert};
+use crate::netscape_comment::{verify_server_cert, verify_signature, NetscapeComment};
 use chrono::prelude::*;
 use codec::{Decode, Encode};
 use serde_json::Value;
@@ -27,6 +27,7 @@ use std::convert::TryFrom;
 
 mod ephemeral_key;
 mod netscape_comment;
+#[cfg(test)]
 mod tests;
 mod utils;
 
@@ -163,16 +164,21 @@ pub struct CertDer<'a>(&'a [u8]);
 // make sure this function doesn't panic!
 pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
     // Before we reach here, the runtime already verified the extrinsic is properly signed by the extrinsic sender
-    // Search for Public Key prime256v1 OID
+    // Hence, we skip: EphemeralKey::try_from(cert)?;
 
     #[cfg(test)]
     println!("verifyRA: start verifying RA cert");
 
     let cert = CertDer(cert_der);
     let netscape = NetscapeComment::try_from(cert)?;
+    let sig_cert = webpki::EndEntityCert::from(&netscape.sig_cert).map_err(|_| "Bad der")?;
 
-    netscape.verify_signature()?;
-    netscape.verify_server_cert()?;
+    verify_signature(&sig_cert, netscape.attestation_raw, &netscape.sig)?;
+
+    // FIXME: now hardcoded. but certificate renewal would have to be done manually anyway...
+    // chain wasm update or by some sudo call
+    let valid_until = webpki::Time::from_seconds_since_unix_epoch(1573419050);
+    verify_server_cert(&sig_cert, valid_until)?;
 
     parse_report(netscape.attestation_raw)
 }
