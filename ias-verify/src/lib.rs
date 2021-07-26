@@ -169,6 +169,16 @@ fn safe_indexing_one(data: &[u8], idx: usize) -> Result<u8, &'static str> {
     Ok(data[idx])
 }
 
+fn length_from_raw_data(data: &[u8], offset: &mut usize) -> Result<usize, &'static str> {
+    let mut len = safe_indexing_one(data, *offset)? as usize;
+    if len > 0x80 {
+        len = (safe_indexing_one(data, *offset + 1)? as usize) * 0x100
+            + (safe_indexing_one(data, *offset + 2)? as usize);
+        *offset += 2;
+    }
+    Ok(len)
+}
+
 pub struct CertDer<'a>(&'a [u8]);
 pub struct NetscapeComment<'a> {
     pub attestation_raw: &'a [u8],
@@ -198,12 +208,7 @@ impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
         offset += 11; // 10 + TAG (0x03)
 
         // Obtain Public Key length
-        let mut len = safe_indexing_one(cert_der, offset)? as usize;
-        if len > 0x80 {
-            len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
-                + (safe_indexing_one(cert_der, offset + 2)? as usize);
-            offset += 2;
-        }
+        let mut len = length_from_raw_data(cert_der, &mut offset)?;
 
         // Obtain Public Key
         offset += 1;
@@ -237,14 +242,7 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
         #[cfg(test)]
         println!("netscape");
         // Obtain Netscape Comment length
-        let mut len = safe_indexing_one(cert_der, offset)? as usize;
-
-        if len > 0x80 {
-            len = (safe_indexing_one(cert_der, offset + 1)? as usize) * 0x100
-                + (safe_indexing_one(cert_der, offset + 2)? as usize);
-            offset += 2;
-        }
-
+        let mut len = length_from_raw_data(cert_der, &mut offset)?;
         // Obtain Netscape Comment
         offset += 1;
         let netscape_raw = safe_indexing(cert_der, offset, offset + len)?
