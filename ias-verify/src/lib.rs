@@ -198,13 +198,11 @@ impl<'a> TryFrom<CertDer<'a>> for PubKey<'a> {
 
         let prime256v1_oid = &[0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07];
 
-        let mut offset = match cert_der
+        let mut offset = cert_der
             .windows(prime256v1_oid.len())
             .position(|window| window == prime256v1_oid)
-        {
-            Some(o) => o,
-            _ => return Err("Certificate to check is empty"),
-        };
+            .ok_or("Certificate does not contain 'prime256v1'")?;
+
         offset += 11; // 10 + TAG (0x03)
 
         // Obtain Public Key length
@@ -230,13 +228,11 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
         let ns_cmt_oid = &[
             0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x0D,
         ];
-        let mut offset = match cert_der
+        let mut offset = cert_der
             .windows(ns_cmt_oid.len())
             .position(|window| window == ns_cmt_oid)
-        {
-            Some(o) => o,
-            _ => return Err("Certificate to check is empty"),
-        };
+            .ok_or("Certificate does not contain 'ns_cmt_oid'")?;
+
         offset += 12; // 11 + TAG (0x04)
 
         #[cfg(test)]
