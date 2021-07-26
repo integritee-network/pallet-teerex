@@ -20,7 +20,6 @@ fn test_enclave() -> TestEnclave {
 #[test]
 fn register_enclave_with_empty_mrenclave_works() {
     new_test_ext().execute_with(|| {
-        // set the now in the runtime such that the remote attestation reports are within accepted range (24h)
         assert_ok!(SubstrateeRegistry::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             Vec::new(),
@@ -35,7 +34,6 @@ fn register_enclave_with_empty_mrenclave_works() {
 #[test]
 fn register_enclave_with_mrenclave_works() {
     new_test_ext().execute_with(|| {
-        // set the now in the runtime such that the remote attestation reports are within accepted range (24h)
         assert_ok!(SubstrateeRegistry::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             TEST4_MRENCLAVE.to_vec(),
@@ -52,7 +50,6 @@ fn register_enclave_with_mrenclave_works() {
 #[test]
 fn register_enclave_with_faulty_mrenclave_inserts_default() {
     new_test_ext().execute_with(|| {
-        // set the now in the runtime such that the remote attestation reports are within accepted range (24h)
         assert_ok!(SubstrateeRegistry::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             [1u8, 2].to_vec(),
@@ -67,7 +64,6 @@ fn register_enclave_with_faulty_mrenclave_inserts_default() {
 #[test]
 fn register_enclave_with_empty_url_inserts_default() {
     new_test_ext().execute_with(|| {
-        // set the now in the runtime such that the remote attestation reports are within accepted range (24h)
         assert_ok!(SubstrateeRegistry::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             Vec::new(),
