@@ -17,7 +17,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::netscape_comment::{verify_server_cert, verify_signature, NetscapeComment};
+use crate::netscape_comment::NetscapeComment;
 use chrono::prelude::*;
 use codec::{Decode, Encode};
 use serde_json::Value;
@@ -269,5 +269,52 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
         })
     } else {
         Err("Failed to parse isvEnclaveQuoteBody from attestation report")
+    }
+}
+
+pub fn verify_signature(
+    entity_cert: &webpki::EndEntityCert,
+    attestation_raw: &[u8],
+    signature: &[u8],
+) -> Result<(), &'static str> {
+    match entity_cert.verify_signature(
+        &webpki::RSA_PKCS1_2048_8192_SHA256,
+        attestation_raw,
+        signature,
+    ) {
+        Ok(()) => {
+            #[cfg(test)]
+            println!("IAS signature is valid");
+            Ok(())
+        }
+        Err(_e) => {
+            #[cfg(test)]
+            println!("RSA Signature ERROR: {}", _e);
+            Err("bad signature")
+        }
+    }
+}
+
+pub fn verify_server_cert(
+    sig_cert: &webpki::EndEntityCert,
+    timestamp_valid_until: webpki::Time,
+) -> Result<(), &'static str> {
+    let chain: Vec<&[u8]> = Vec::new();
+    match sig_cert.verify_is_valid_tls_server_cert(
+        SUPPORTED_SIG_ALGS,
+        &IAS_SERVER_ROOTS,
+        &chain,
+        timestamp_valid_until,
+    ) {
+        Ok(()) => {
+            #[cfg(test)]
+            println!("CA is valid");
+            Ok(())
+        }
+        Err(_e) => {
+            #[cfg(test)]
+            println!("CA ERROR: {}", _e);
+            Err("CA verification failed")
+        }
     }
 }

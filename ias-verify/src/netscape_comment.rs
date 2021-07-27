@@ -1,5 +1,5 @@
 use crate::utils::{length_from_raw_data, safe_indexing};
-use crate::{CertDer, IAS_SERVER_ROOTS, SUPPORTED_SIG_ALGS};
+use crate::CertDer;
 use frame_support::ensure;
 use std::convert::TryFrom;
 
@@ -7,7 +7,6 @@ pub struct NetscapeComment<'a> {
     pub attestation_raw: &'a [u8],
     pub sig: Vec<u8>,
     pub sig_cert: Vec<u8>,
-    pub entity_cert: Option<webpki::EndEntityCert<'a>>,
 }
 
 pub const NS_CMT_OID: &[u8; 11] = &[
@@ -49,54 +48,6 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
             attestation_raw: netscape_raw[0],
             sig: sig,
             sig_cert: sig_cert,
-            entity_cert: None,
         })
-    }
-}
-
-pub fn verify_signature(
-    entity_cert: &webpki::EndEntityCert,
-    attestation_raw: &[u8],
-    signature: &[u8],
-) -> Result<(), &'static str> {
-    match entity_cert.verify_signature(
-        &webpki::RSA_PKCS1_2048_8192_SHA256,
-        attestation_raw,
-        signature,
-    ) {
-        Ok(()) => {
-            #[cfg(test)]
-            println!("IAS signature is valid");
-            Ok(())
-        }
-        Err(_e) => {
-            #[cfg(test)]
-            println!("RSA Signature ERROR: {}", _e);
-            Err("bad signature")
-        }
-    }
-}
-
-pub fn verify_server_cert(
-    sig_cert: &webpki::EndEntityCert,
-    timestamp_valid_until: webpki::Time,
-) -> Result<(), &'static str> {
-    let chain: Vec<&[u8]> = Vec::new();
-    match sig_cert.verify_is_valid_tls_server_cert(
-        SUPPORTED_SIG_ALGS,
-        &IAS_SERVER_ROOTS,
-        &chain,
-        timestamp_valid_until,
-    ) {
-        Ok(()) => {
-            #[cfg(test)]
-            println!("CA is valid");
-            Ok(())
-        }
-        Err(_e) => {
-            #[cfg(test)]
-            println!("CA ERROR: {}", _e);
-            Err("CA verification failed")
-        }
     }
 }
