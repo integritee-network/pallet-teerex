@@ -43,14 +43,16 @@ mod test {
 
     #[test]
     fn index_equal_length_returns_err() {
-        // Todo add security audit context
+        // It was discovered a panic occurs if `index == data.len()` due to out of bound
+        // indexing. Here the fix is tested.
+        //
+        // For context see: https://github.com/integritee-network/pallet-teerex/issues/34
         let data: [u8; 7] = [0, 1, 2, 3, 4, 5, 6];
         assert_err!(safe_indexing_one(&data, data.len()), "Index out of bounds");
     }
 
     #[test]
     fn start_equals_length_returns_empty_slice() {
-        // Todo add security audit context
         let data: [u8; 7] = [0, 1, 2, 3, 4, 5, 6];
         assert_ok!(safe_indexing(&data, data.len(), data.len()), &[][..]);
     }
