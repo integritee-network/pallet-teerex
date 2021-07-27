@@ -156,9 +156,9 @@ pub static IAS_SERVER_ROOTS: webpki::TLSServerTrustAnchors = webpki::TLSServerTr
 
 ]);
 
-/// Contains an invalidated ias remote attestation certificate.
+/// Contains an unvalidated ias remote attestation certificate.
 ///
-/// Wrapper to implemented parsing an verification traits on it.
+/// Wrapper to implemented parsing and verification traits on it.
 pub struct CertDer<'a>(&'a [u8]);
 
 // make sure this function doesn't panic!
