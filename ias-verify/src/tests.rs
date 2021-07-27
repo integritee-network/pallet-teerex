@@ -128,8 +128,13 @@ fn safe_indexing_works() {
 }
 
 #[test]
-fn fix_out_of_bound_panic() {
-    // for context, see: https://github.com/integritee-network/pallet-teerex/issues/35
+fn fix_incorrect_handling_of_iterator() {
+    // In `verify_ias_report` we called `iter.next()` with unwrap three times, which could fail
+    // for certain invalid reports as the one in this test. This test verifies that the issue
+    // has been fixed.
+    //
+    // For context, see: https://github.com/integritee-network/pallet-teerex/issues/35
+
     let report: [u8; 56] = [
         224, 224, 224, 224, 224, 224, 224, 224, 235, 2, 0, 1, 5, 40, 0, 8, 255, 6, 8, 42, 134, 72,
         206, 61, 3, 1, 7, 0, 2, 183, 64, 48, 48, 0, 1, 10, 23, 3, 6, 9, 96, 134, 72, 1, 134, 248,
