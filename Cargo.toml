@@ -81,3 +81,4 @@ std = [
     'sp-core/std',
     'timestamp/std'
 ]
+skip-ias-check = []
