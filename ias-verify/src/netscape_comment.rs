@@ -1,7 +1,8 @@
 use crate::utils::{length_from_raw_data, safe_indexing};
 use crate::CertDer;
 use frame_support::ensure;
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
+use sp_std::prelude::Vec;
 
 pub struct NetscapeComment<'a> {
     pub attestation_raw: &'a [u8],

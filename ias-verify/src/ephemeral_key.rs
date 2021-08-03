@@ -1,6 +1,6 @@
 use crate::utils::{length_from_raw_data, safe_indexing};
 use crate::CertDer;
-use std::convert::TryFrom;
+use sp_std::convert::TryFrom;
 
 pub struct EphemeralKey<'a>(&'a [u8]);
 
