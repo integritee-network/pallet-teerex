@@ -59,3 +59,19 @@ jobs:
           submodules: 'true'
       - name: test
         run: cargo test --all --features runtime-benchmarks
+  test-skip-ias-check:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-03-25
+          override: true
+          target: wasm32-unknown-unknown
+      - name: Install llvm-10
+        run: sudo apt-get install llvm-10 clang-10
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: test
+        run: cargo test --all --features skip-ias-check

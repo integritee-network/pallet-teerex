@@ -30,6 +30,7 @@ use crate::test_utils::{consts::URL, get_signer, ias::TEST4_SETUP};
 use crate::Pallet as Teerex;
 
 fn ensure_not_skipping_ra_check() {
+    #[cfg(not(test))]
     if cfg!(feature = "skip-ias-check") {
         panic!("Benchmark does not allow the `skip-ias-check` flag.");
     };
@@ -39,7 +40,7 @@ fn generate_accounts<T: Config>(amount: u32) -> Vec<T::AccountId> {
     (0..amount).map(|n| account("dummy name", n, n)).collect()
 }
 
-fn add_enclaves_to_registry<T: Config>(accounts: &Vec<T::AccountId>) {
+fn add_enclaves_to_registry<T: Config>(accounts: &[T::AccountId]) {
     for a in accounts.iter() {
         Teerex::<T>::add_enclave(a, &Enclave::default().with_pubkey(a.clone())).unwrap()
     }
