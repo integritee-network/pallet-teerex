@@ -340,7 +340,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
         .is_ok());
 
         assert!(SubstrateeRegistry::unshield_funds(
-            Origin::signed(signer.clone()), //
+            Origin::signed(signer.clone()),
             AccountKeyring::Alice.to_account_id(),
             50,
             signer,
