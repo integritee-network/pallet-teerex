@@ -33,38 +33,45 @@ path = './ias-verify'
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.sp-io]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.sp-core]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.sp-runtime]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.sp-std]
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 
 ## benchmarking stuff
@@ -73,12 +80,14 @@ default-features = false
 optional = true
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dependencies.pallet-balances]
 optional = true
 default-features = false
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dev-dependencies]
 hex-literal = "*"
@@ -89,14 +98,17 @@ log = "*"
 package = "sp-externalities"
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "0.10.0-dev"
 
 [dev-dependencies.sp-keyring]
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [dev-dependencies.pallet-balances]
 git = "https://github.com/paritytech/substrate.git"
 branch = "master"
+version = "4.0.0-dev"
 
 [features]
 default = ['std']
