@@ -1,7 +1,6 @@
 use super::*;
-use crate::utils::{safe_indexing, safe_indexing_one};
 use codec::Decode;
-use frame_support::{assert_err, assert_ok};
+use frame_support::assert_err;
 use hex_literal::hex;
 // reproduce with "substratee_worker dump_ra"
 const TEST1_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER1_MRENCLAVE1.der");
@@ -115,16 +114,6 @@ fn verify_short_cert_is_err() {
     let signer_attn: [u32; 16] = Decode::decode(&mut TEST1_SIGNER_ATTN).unwrap();
     assert!(verify_ias_report(CERT_TOO_SHORT1).is_err());
     assert!(verify_ias_report(CERT_TOO_SHORT2).is_err());
-}
-
-#[test]
-fn safe_indexing_works() {
-    let data: [u8; 7] = [0, 1, 2, 3, 4, 5, 6];
-    assert_eq!(safe_indexing(&data, 1, 7), Ok(&data[1..7]));
-    assert_eq!(safe_indexing_one(&data, 3), Ok(3));
-    assert!(safe_indexing(&data, 1, 8).is_err());
-    assert!(safe_indexing(&data, 6, 1).is_err());
-    assert!(safe_indexing(&data, 16, 19).is_err());
 }
 
 #[test]
