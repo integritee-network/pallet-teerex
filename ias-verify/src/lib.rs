@@ -18,6 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use chrono::prelude::*;
+use frame_support::ensure;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 //use itertools::Itertools;
@@ -230,18 +231,21 @@ pub fn verify_ias_report(cert_der: &[u8]) -> Result<SgxReport, &'static str> {
 
     // Obtain Netscape Comment
     offset += 1;
-    let payload = safe_indexing(cert_der, offset, offset + len)?.to_vec();
+    let netscape_raw = safe_indexing(cert_der, offset, offset + len)?
+        .split(|x| *x == 0x7C)
+        .collect::<Vec<&[u8]>>();
+
+    ensure!(netscape_raw.len() == 3, "Invalid netscape payload");
 
     // Extract each field
-    let mut iter = payload.split(|x| *x == 0x7C);
-    let attn_report_raw = iter.next().unwrap();
-    let sig_raw = iter.next().unwrap();
+    let attn_report_raw = netscape_raw[0];
+    let sig_raw = netscape_raw[1];
     let sig = match base64::decode(&sig_raw) {
         Ok(m) => m,
         Err(_) => return Err("Signature Decoding Error"),
     };
 
-    let sig_cert_raw = iter.next().unwrap();
+    let sig_cert_raw = netscape_raw[2];
     let sig_cert_dec = match base64::decode_config(&sig_cert_raw, base64::STANDARD) {
         Ok(c) => c,
         Err(_) => return Err("Cert Decoding Error"),
@@ -381,7 +385,9 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
 mod tests {
     use super::*;
     use codec::Decode;
+    use frame_support::assert_err;
     use hex_literal::hex;
+
     // reproduce with "substratee_worker dump_ra"
     const TEST1_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER1_MRENCLAVE1.der");
     const TEST2_CERT: &[u8] = include_bytes!("../test/test_ra_cert_MRSIGNER2_MRENCLAVE2.der");
@@ -504,5 +510,22 @@ mod tests {
         assert!(safe_indexing(&data, 1, 8).is_err());
         assert!(safe_indexing(&data, 6, 1).is_err());
         assert!(safe_indexing(&data, 16, 19).is_err());
+    }
+
+    #[test]
+    fn fix_incorrect_handling_of_iterator() {
+        // In `verify_ias_report` we called `iter.next()` with unwrap three times, which could fail
+        // for certain invalid reports as the one in this test. This test verifies that the issue
+        // has been fixed.
+        //
+        // For context, see: https://github.com/integritee-network/pallet-teerex/issues/35
+
+        let report: [u8; 56] = [
+            224, 224, 224, 224, 224, 224, 224, 224, 235, 2, 0, 1, 5, 40, 0, 8, 255, 6, 8, 42, 134,
+            72, 206, 61, 3, 1, 7, 0, 2, 183, 64, 48, 48, 0, 1, 10, 23, 3, 6, 9, 96, 134, 72, 1,
+            134, 248, 66, 1, 13, 0, 0, 0, 13, 1, 14, 177,
+        ];
+
+        assert_err!(verify_ias_report(&report), "Invalid netscape payload");
     }
 }
