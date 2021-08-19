@@ -31,39 +31,39 @@ path = './ias-verify'
 
 [dependencies.frame-support]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.frame-system]
 default-features = false
 package = 'frame-system'
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.sp-io]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.sp-core]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.sp-runtime]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.sp-std]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.timestamp]
 default-features = false
 package = "pallet-timestamp"
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 
@@ -71,13 +71,13 @@ branch = "polkadot-v0.9.8"
 [dependencies.frame-benchmarking]
 default-features = false
 optional = true
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dependencies.pallet-balances]
 optional = true
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dev-dependencies]
@@ -87,15 +87,15 @@ log = "*"
 
 [dev-dependencies.externalities]
 package = "sp-externalities"
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dev-dependencies.sp-keyring]
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [dev-dependencies.pallet-balances]
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/paritytech/substrate"
 branch = "polkadot-v0.9.8"
 
 [features]
