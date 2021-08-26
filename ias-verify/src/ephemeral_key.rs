@@ -1,4 +1,4 @@
-use crate::utils::{length_from_raw_data, safe_indexing};
+use crate::utils::length_from_raw_data;
 use crate::CertDer;
 use sp_std::convert::TryFrom;
 
@@ -23,7 +23,9 @@ impl<'a> TryFrom<CertDer<'a>> for EphemeralKey<'a> {
 
         // Obtain Public Key
         offset += 1;
-        let pub_k = safe_indexing(cert_der, offset + 2, offset + len)?; // skip "00 04"
+        let pub_k = cert_der
+            .get(offset + 2..offset + len)
+            .ok_or("Index out of bounds")?;
 
         #[cfg(test)]
         println!("verifyRA ephemeral public key: {:x?}", pub_k);
