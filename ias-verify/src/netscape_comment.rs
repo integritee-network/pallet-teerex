@@ -1,4 +1,4 @@
-use crate::utils::length_from_raw_data;
+use crate::utils::{length_from_raw_data, safe_indexing};
 use crate::CertDer;
 use frame_support::ensure;
 use sp_std::convert::TryFrom;
@@ -34,9 +34,7 @@ impl<'a> TryFrom<CertDer<'a>> for NetscapeComment<'a> {
         let len = length_from_raw_data(cert_der, &mut offset)?;
         // Obtain Netscape Comment
         offset += 1;
-        let netscape_raw = cert_der
-            .get(offset..offset + len)
-            .ok_or("Index out of bounds")?
+        let netscape_raw = safe_indexing(cert_der, offset..offset + len)?
             .split(|x| *x == 0x7C)
             .collect::<Vec<&[u8]>>();
         ensure!(netscape_raw.len() == 3, "Invalid netscape payload");
