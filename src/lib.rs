@@ -21,7 +21,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
     dispatch::DispatchResult,
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, OnTimestampSet},
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
@@ -40,6 +40,7 @@ pub trait Config: system::Config + timestamp::Config {
     type Currency: Currency<<Self as system::Config>::AccountId>;
     type MomentsPerDay: Get<Self::Moment>;
     type WeightInfo: WeightInfo;
+    type MaxSilenceTime: Get<Self::Moment>;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -292,8 +293,26 @@ impl<T: Config> Module<T> {
         }
 
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
-
         Ok(())
+    }
+
+    fn unregister_silent_workers(now: T::Moment) {
+        let minimum = (now - T::MaxSilenceTime::get()).saturated_into::<u64>();
+        let silent_workers = <EnclaveRegistry<T>>::iter()
+            .filter(|e| e.1.timestamp < minimum)
+            .map(|e| e.1.pubkey);
+        for index in silent_workers {
+            let result = Self::remove_enclave(&index);
+            match result {
+                Ok(_) => {
+                    log::info!("Unregister enclave because silent worker : {:?}", index);
+                    Self::deposit_event(RawEvent::RemovedEnclave(index));
+                }
+                Err(e) => {
+                    log::error!("Cannot unregister enclave : {:?}", e);
+                }
+            };
+        }
     }
 
     #[cfg(not(feature = "skip-ias-check"))]
@@ -334,6 +353,12 @@ impl<T: Config> Module<T> {
         } else {
             Err(<Error<T>>::RemoteAttestationTooOld.into())
         }
+    }
+}
+
+impl<T: Config> OnTimestampSet<T::Moment> for Module<T> {
+    fn on_timestamp_set(moment: T::Moment) {
+        Self::unregister_silent_workers(moment)
     }
 }
 
