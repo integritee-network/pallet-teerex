@@ -40,7 +40,7 @@ pub trait Config: system::Config + timestamp::Config {
     type Currency: Currency<<Self as system::Config>::AccountId>;
     type MomentsPerDay: Get<Self::Moment>;
     type WeightInfo: WeightInfo;
-    type SilenceDuration: Get<Self::Moment>;
+    type MaxSilenceTime: Get<Self::Moment>;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -296,23 +296,11 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn list_silent_workers(now: T::Moment) -> Vec<T::AccountId> {
-        let mut silent_workers: Vec<T::AccountId> = Vec::new();
-        let enclaves: Vec<(u64, Enclave<T::AccountId, Vec<u8>>)> =
-            <EnclaveRegistry<T>>::iter().collect();
-
-        let minimum = (now - T::SilenceDuration::get()).saturated_into::<u64>();
-
-        for enclave in enclaves {
-            if enclave.1.timestamp < minimum {
-                silent_workers.push(enclave.1.pubkey);
-            }
-        }
-        silent_workers
-    }
-
     fn on_timestamp_set(now: T::Moment) {
-        let silent_workers = Self::list_silent_workers(now);
+        let minimum = (now - T::MaxSilenceTime::get()).saturated_into::<u64>();
+        let silent_workers = <EnclaveRegistry<T>>::iter()
+            .filter(|e| e.1.timestamp < minimum)
+            .map(|e| e.1.pubkey);
         for index in silent_workers {
             let result = Self::remove_enclave(&index);
             match result {

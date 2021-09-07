@@ -123,14 +123,14 @@ impl timestamp::Config for Test {
 
 parameter_types! {
     pub const MomentsPerDay: u64 = 86_400_000; // [ms/d]
-    pub const SilenceDuration: u64 = 172_800_000; // 48h
+    pub const MaxSilenceTime: u64 = 172_800_000; // 48h
 }
 
 impl Config for Test {
     type Event = Event;
     type Currency = Balances;
     type MomentsPerDay = MomentsPerDay;
-    type SilenceDuration = SilenceDuration;
+    type MaxSilenceTime = MaxSilenceTime;
     type WeightInfo = ();
 }
 
