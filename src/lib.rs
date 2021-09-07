@@ -21,7 +21,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
     dispatch::DispatchResult,
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, OnTimestampSet},
     weights::{DispatchClass, Pays},
 };
 use frame_system::{self as system, ensure_signed};
@@ -40,6 +40,7 @@ pub trait Config: system::Config + timestamp::Config {
     type Currency: Currency<<Self as system::Config>::AccountId>;
     type MomentsPerDay: Get<Self::Moment>;
     type WeightInfo: WeightInfo;
+    type SilenceDuration: Get<Self::Moment>;
 }
 
 const MAX_RA_REPORT_LEN: usize = 4096;
@@ -292,8 +293,38 @@ impl<T: Config> Module<T> {
         }
 
         <EnclaveRegistry<T>>::remove(new_enclaves_count);
-
         Ok(())
+    }
+
+    fn list_silent_workers(now: T::Moment) -> Vec<T::AccountId> {
+        let mut silent_workers: Vec<T::AccountId> = Vec::new();
+        let enclaves: Vec<(u64, Enclave<T::AccountId, Vec<u8>>)> =
+            <EnclaveRegistry<T>>::iter().collect();
+
+        let minimum = (now - T::SilenceDuration::get()).saturated_into::<u64>();
+
+        for enclave in enclaves {
+            if enclave.1.timestamp < minimum {
+                silent_workers.push(enclave.1.pubkey);
+            }
+        }
+        silent_workers
+    }
+
+    fn on_timestamp_set(now: T::Moment) {
+        let silent_workers = Self::list_silent_workers(now);
+        for index in silent_workers {
+            let result = Self::remove_enclave(&index);
+            match result {
+                Ok(_) => {
+                    log::info!("Unregister enclave because silent worker : {:?}", index);
+                    Self::deposit_event(RawEvent::RemovedEnclave(index));
+                }
+                Err(e) => {
+                    log::error!("Cannot unregister enclave : {:?}", e);
+                }
+            };
+        }
     }
 
     #[cfg(not(feature = "skip-ias-check"))]
@@ -334,6 +365,12 @@ impl<T: Config> Module<T> {
         } else {
             Err(<Error<T>>::RemoteAttestationTooOld.into())
         }
+    }
+}
+
+impl<T: Config> OnTimestampSet<T::Moment> for Module<T> {
+    fn on_timestamp_set(moment: T::Moment) {
+        Self::on_timestamp_set(moment)
     }
 }
 

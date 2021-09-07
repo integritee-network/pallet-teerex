@@ -351,3 +351,85 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
         assert_eq!(<ConfirmedCalls>::get(call_hash), 2)
     })
 }
+#[test]
+fn timestamp_callback_works() {
+    new_test_ext().execute_with(|| {
+        set_timestamp(TEST7_TIMESTAMP);
+
+        let signer5 = get_signer(TEST5_SIGNER_PUB);
+        let signer6 = get_signer(TEST6_SIGNER_PUB);
+        let signer7 = get_signer(TEST7_SIGNER_PUB);
+
+        // add enclave 1
+        let e_1: Enclave<AccountId, Vec<u8>> = Enclave {
+            pubkey: signer5.clone(),
+            mr_enclave: TEST5_MRENCLAVE,
+            timestamp: TEST5_TIMESTAMP,
+            url: URL.to_vec(),
+        };
+
+        let e_2: Enclave<AccountId, Vec<u8>> = Enclave {
+            pubkey: signer6.clone(),
+            mr_enclave: TEST6_MRENCLAVE,
+            timestamp: TEST6_TIMESTAMP,
+            url: URL.to_vec(),
+        };
+
+        let e_3: Enclave<AccountId, Vec<u8>> = Enclave {
+            pubkey: signer7.clone(),
+            mr_enclave: TEST7_MRENCLAVE,
+            timestamp: TEST7_TIMESTAMP,
+            url: URL.to_vec(),
+        };
+
+        //Register 3 enclaves: 5, 6 ,7
+        assert_ok!(SubstrateeRegistry::register_enclave(
+            Origin::signed(signer5.clone()),
+            TEST5_CERT.to_vec(),
+            URL.to_vec()
+        ));
+        assert_ok!(SubstrateeRegistry::register_enclave(
+            Origin::signed(signer6.clone()),
+            TEST6_CERT.to_vec(),
+            URL.to_vec()
+        ));
+        assert_ok!(SubstrateeRegistry::register_enclave(
+            Origin::signed(signer7.clone()),
+            TEST7_CERT.to_vec(),
+            URL.to_vec()
+        ));
+        assert_eq!(SubstrateeRegistry::enclave_count(), 3);
+
+        //enclave 5 silent since 49h -> unregistered
+        run_to_block(2);
+        set_timestamp(TEST5_TIMESTAMP + 2 * TWENTY_FOUR_HOURS + 1);
+
+        let expected_event = Event::SubstrateeRegistry(RawEvent::RemovedEnclave(signer5));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+        assert_eq!(SubstrateeRegistry::enclave_count(), 2);
+        //2 and 3 are still there. 3 and 1 were swapped -> 3 and 2
+        let enclaves = list_enclaves();
+        assert!(enclaves.contains(&(1, e_3.clone())));
+        assert!(enclaves.contains(&(2, e_2.clone())));
+
+        run_to_block(3);
+        //enclave 6 and 7 still registered: not long enough silent
+        set_timestamp(TEST6_TIMESTAMP + 2 * TWENTY_FOUR_HOURS);
+        assert_eq!(SubstrateeRegistry::enclave_count(), 2);
+
+        //unregister 6 to generate an error next call of callbakc
+        assert_ok!(SubstrateeRegistry::unregister_enclave(Origin::signed(
+            signer6.clone()
+        )));
+        let expected_event = Event::SubstrateeRegistry(RawEvent::RemovedEnclave(signer6));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+
+        //enclave 6 and 7 silent since TWENTY_FOUR_HOURS + 1 -> unregistered
+        run_to_block(4);
+        set_timestamp(TEST7_TIMESTAMP + 2 * TWENTY_FOUR_HOURS + 1);
+        let expected_event = Event::SubstrateeRegistry(RawEvent::RemovedEnclave(signer7));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+        assert_eq!(SubstrateeRegistry::enclave_count(), 0);
+    })
+}
