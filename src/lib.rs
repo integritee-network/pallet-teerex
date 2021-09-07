@@ -296,7 +296,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn on_timestamp_set(now: T::Moment) {
+    fn unregister_silent_workers(now: T::Moment) {
         let minimum = (now - T::MaxSilenceTime::get()).saturated_into::<u64>();
         let silent_workers = <EnclaveRegistry<T>>::iter()
             .filter(|e| e.1.timestamp < minimum)
@@ -358,7 +358,7 @@ impl<T: Config> Module<T> {
 
 impl<T: Config> OnTimestampSet<T::Moment> for Module<T> {
     fn on_timestamp_set(moment: T::Moment) {
-        Self::on_timestamp_set(moment)
+        Self::unregister_silent_workers(moment)
     }
 }
 
