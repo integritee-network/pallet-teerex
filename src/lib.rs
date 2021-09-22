@@ -95,7 +95,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Config> as SubstrateeRegistry {
+    trait Store for Module<T: Config> as Teerex {
         // Simple lists are not supported in runtime modules as theoretically O(n)
         // operations can be executed while only being charged O(1), see substrate
         // Kitties tutorial Chapter 2, Tracking all Kitties.
@@ -118,21 +118,21 @@ decl_module! {
         type Error = Error<T>;
         fn deposit_event() = default;
 
-        // the substraTEE-worker wants to register his enclave
+        // the integritee-service wants to register his enclave
         #[weight = (<T as Config>::WeightInfo::register_enclave(), DispatchClass::Normal, Pays::Yes)]
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
-            log::info!("substraTEE_registry: called into runtime call register_enclave()");
+            log::info!("teerex: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
             ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
             ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
-            log::info!("substraTEE_registry: parameter lenght ok");
+            log::info!("teerex: parameter lenght ok");
 
             #[cfg(not(feature = "skip-ias-check"))]
             let enclave = Self::verify_report(&sender, ra_report)
                 .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
 
             #[cfg(feature = "skip-ias-check")]
-            log::warn!("[substraTEE_registry]: Skipping remote attestation check. Only dev-chains are allowed to do this!");
+            log::warn!("[teerex]: Skipping remote attestation check. Only dev-chains are allowed to do this!");
 
             #[cfg(feature = "skip-ias-check")]
             let enclave = Enclave::new(
@@ -168,12 +168,12 @@ decl_module! {
             Ok(())
         }
 
-        // the substraTEE-worker calls this function for every processed call to confirm a state update
+        // the integritee-service calls this function for every processed call to confirm a state update
         #[weight = (<T as Config>::WeightInfo::confirm_call(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-            "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
+            "[Teerex]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
@@ -183,12 +183,12 @@ decl_module! {
             Ok(())
         }
 
-        // the substraTEE-worker calls this function for every processed block to confirm a state update
+        // the integritee-service calls this function for every processed block to confirm a state update
         #[weight = (<T as Config>::WeightInfo::confirm_block(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-                "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
+                "[Teerex]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
@@ -199,7 +199,7 @@ decl_module! {
         }
 
         /// Sent by a client who requests to get shielded funds managed by an enclave. For this on-chain balance is sent to the bonding_account of the enclave.
-        /// The bonding_account does not have a private key as the balance on this account is exclusively managed from withing the pallet-substratee-registry.
+        /// The bonding_account does not have a private key as the balance on this account is exclusively managed from withing the pallet_teerex.
         /// Note: The bonding_account is bit-equivalent to the worker shard.
         #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn shield_funds(origin, incognito_account_encrypted: Vec<u8>, amount: BalanceOf<T>, bonding_account: T::AccountId) -> DispatchResult {
@@ -214,7 +214,7 @@ decl_module! {
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-            "[SubstraTEERegistry]: IPFS state update requested by enclave that is not registered");
+            "[Teerex]: IPFS state update requested by enclave that is not registered");
 
             if !<ConfirmedCalls>::contains_key(call_hash) {
                 log::info!("First confirmation for call: {:?}", call_hash);
@@ -254,7 +254,7 @@ impl<T: Config> Module<T> {
         } else {
             let enclaves_count = Self::enclave_count()
                 .checked_add(1)
-                .ok_or("[SubstraTEERegistry]: Overflow adding new enclave to registry")?;
+                .ok_or("[Teerex]: Overflow adding new enclave to registry")?;
             <EnclaveIndex<T>>::insert(sender, enclaves_count);
             <EnclaveCount>::put(enclaves_count);
             enclaves_count
@@ -267,14 +267,14 @@ impl<T: Config> Module<T> {
     fn remove_enclave(sender: &T::AccountId) -> DispatchResult {
         ensure!(
             <EnclaveIndex<T>>::contains_key(sender),
-            "[SubstraTEERegistry]: Trying to remove an enclave that doesn't exist."
+            "[Teerex]: Trying to remove an enclave that doesn't exist."
         );
         let index_to_remove = <EnclaveIndex<T>>::take(sender);
 
         let enclaves_count = Self::enclave_count();
         let new_enclaves_count = enclaves_count
             .checked_sub(1)
-            .ok_or("[SubstraTEERegistry]: Underflow removing an enclave from the registry")?;
+            .ok_or("[Teerex]: Underflow removing an enclave from the registry")?;
 
         Self::swap_and_pop(index_to_remove, new_enclaves_count + 1)?;
         <EnclaveCount>::put(new_enclaves_count);
@@ -334,7 +334,7 @@ impl<T: Config> Module<T> {
         // TODO: activate state checks as soon as we've fixed our setup
         // ensure!((report.status == SgxStatus::Ok) | (report.status == SgxStatus::ConfigurationNeeded),
         //     "RA status is insufficient");
-        // log::info!("substraTEE_registry: status is acceptable");
+        // log::info!("teerex: status is acceptable");
 
         Self::ensure_timestamp_within_24_hours(report.timestamp)?;
         Ok(report)
