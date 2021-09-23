@@ -20,13 +20,13 @@ fn test_enclave() -> TestEnclave {
 #[test]
 fn register_enclave_with_empty_mrenclave_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(SubstrateeRegistry::register_enclave(
+        assert_ok!(Teerex::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             Vec::new(),
             URL.to_vec()
         ));
 
-        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+        assert_eq!(Teerex::enclave_count(), 1);
         assert_eq!(<EnclaveRegistry<Test>>::get(1), test_enclave());
     })
 }
@@ -34,7 +34,7 @@ fn register_enclave_with_empty_mrenclave_works() {
 #[test]
 fn register_enclave_with_mrenclave_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(SubstrateeRegistry::register_enclave(
+        assert_ok!(Teerex::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             TEST4_MRENCLAVE.to_vec(),
             URL.to_vec()
@@ -42,7 +42,7 @@ fn register_enclave_with_mrenclave_works() {
 
         let enc = test_enclave().with_mr_enclave(TEST4_MRENCLAVE);
 
-        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+        assert_eq!(Teerex::enclave_count(), 1);
         assert_eq!(<EnclaveRegistry<Test>>::get(1), enc);
     })
 }
@@ -50,13 +50,13 @@ fn register_enclave_with_mrenclave_works() {
 #[test]
 fn register_enclave_with_faulty_mrenclave_inserts_default() {
     new_test_ext().execute_with(|| {
-        assert_ok!(SubstrateeRegistry::register_enclave(
+        assert_ok!(Teerex::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             [1u8, 2].to_vec(),
             URL.to_vec()
         ));
 
-        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+        assert_eq!(Teerex::enclave_count(), 1);
         assert_eq!(<EnclaveRegistry<Test>>::get(1), test_enclave());
     })
 }
@@ -64,7 +64,7 @@ fn register_enclave_with_faulty_mrenclave_inserts_default() {
 #[test]
 fn register_enclave_with_empty_url_inserts_default() {
     new_test_ext().execute_with(|| {
-        assert_ok!(SubstrateeRegistry::register_enclave(
+        assert_ok!(Teerex::register_enclave(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             Vec::new(),
             Vec::new(),
@@ -72,7 +72,7 @@ fn register_enclave_with_empty_url_inserts_default() {
 
         let enc = test_enclave().with_url(Default::default());
 
-        assert_eq!(SubstrateeRegistry::enclave_count(), 1);
+        assert_eq!(Teerex::enclave_count(), 1);
         assert_eq!(<EnclaveRegistry<Test>>::get(1), enc);
     })
 }

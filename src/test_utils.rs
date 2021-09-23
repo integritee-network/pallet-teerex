@@ -92,13 +92,13 @@ pub mod ias {
 pub mod consts {
     use hex_literal::hex;
 
-    // reproduce with "substratee_worker dump_ra"
+    // reproduce with "integritee_service dump_ra"
     pub const TEST4_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST4.der");
     pub const TEST5_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST5.der");
     pub const TEST6_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST6.der");
     pub const TEST7_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST7.der");
 
-    // reproduce with substratee-worker signing-key
+    // reproduce with integritee-service signing-key
     pub const TEST4_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST4.bin");
     // equal to TEST4! because of MRSIGNER policy it was possible to change the MRENCLAVE but keep the secret

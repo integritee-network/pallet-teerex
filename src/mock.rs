@@ -16,19 +16,19 @@
 */
 
 // Creating mock runtime here
-use crate as substratee_registry;
+use crate as pallet_teerex;
 use frame_support::pallet_prelude::ProvideInherent;
 use frame_support::parameter_types;
 use frame_support::traits::{OnFinalize, OnInitialize, UnfilteredDispatchable};
 
 use frame_system as system;
+use pallet_teerex::Config;
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use sp_runtime::{
     generic,
     traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use substratee_registry::Config;
 
 pub type Signature = sp_runtime::MultiSignature;
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -57,7 +57,7 @@ frame_support::construct_runtime!(
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Timestamp: timestamp::{Pallet, Call, Storage, Inherent},
-        SubstrateeRegistry: substratee_registry::{Pallet, Call, Storage, Event<T>},
+        Teerex: pallet_teerex::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -116,7 +116,7 @@ pub type Moment = u64;
 
 impl timestamp::Config for Test {
     type Moment = Moment;
-    type OnTimestampSet = SubstrateeRegistry;
+    type OnTimestampSet = Teerex;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
