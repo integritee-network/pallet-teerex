@@ -95,7 +95,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Config> as SubstrateeRegistry {
+    trait Store for Module<T: Config> as Teerex {
         // Simple lists are not supported in runtime modules as theoretically O(n)
         // operations can be executed while only being charged O(1), see substrate
         // Kitties tutorial Chapter 2, Tracking all Kitties.
