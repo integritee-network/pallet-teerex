@@ -6,7 +6,7 @@ The pallet also acts as an indirect-invocation proxy for calls to the confidenti
 
 More documentation available at:
 * High-level: https://www.integritee.network/for-developer
-* In-depth: https://www.substratee.com
+* In-depth: https://book.integritee.network/
 
 ## IAS verify
 
