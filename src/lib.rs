@@ -34,6 +34,7 @@ use sp_std::str;
 use ias_verify::{verify_ias_report, SgxReport};
 
 pub use crate::weights::WeightInfo;
+use ias_verify::SgxBuildMode;
 
 pub trait Config: system::Config + timestamp::Config {
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
@@ -53,15 +54,23 @@ pub struct Enclave<PubKey, Url> {
     // Todo: make timestamp: Moment
     pub timestamp: u64, // unix epoch in milliseconds
     pub url: Url,       // utf8 encoded url
+    pub sgx_mode: SgxBuildMode,
 }
 
 impl<PubKey, Url> Enclave<PubKey, Url> {
-    pub fn new(pubkey: PubKey, mr_enclave: [u8; 32], timestamp: u64, url: Url) -> Self {
+    pub fn new(
+        pubkey: PubKey,
+        mr_enclave: [u8; 32],
+        timestamp: u64,
+        url: Url,
+        sgx_build_mode: SgxBuildMode,
+    ) -> Self {
         Enclave {
             pubkey,
             mr_enclave,
             timestamp,
             url,
+            sgx_mode: sgx_build_mode,
         }
     }
 }
@@ -110,6 +119,7 @@ decl_storage! {
         pub WorkerForShard get(fn worker_for_shard) : map hasher(blake2_128_concat) ShardIdentifier => u64;
         pub ConfirmedCalls get(fn confirmed_calls): map hasher(blake2_128_concat) H256 => u64;
         //pub ConfirmedBlocks get(fn confirmed_blocks): map hasher(blake2_128_concat) H256 => u64;
+        pub AllowSGXDebugMode get(fn allow_sgx_debug_mode) config(allow_sgx_debug_mode): bool;
     }
 }
 
@@ -129,7 +139,13 @@ decl_module! {
 
             #[cfg(not(feature = "skip-ias-check"))]
             let enclave = Self::verify_report(&sender, ra_report)
-                .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone()))?;
+                .map(|report| Enclave::new(sender.clone(), report.mr_enclave, report.timestamp, worker_url.clone(), report.build_mode))?;
+
+            #[cfg(not(feature = "skip-ias-check"))]
+            if !<AllowSGXDebugMode>::get() && enclave.sgx_mode == SgxBuildMode::Debug {
+                log::error!("substraTEE_registry: debug mode is not allowed to attest!");
+                return Err(<Error<T>>::SgxModeNotAllowed.into());
+            }
 
             #[cfg(feature = "skip-ias-check")]
             log::warn!("[teerex]: Skipping remote attestation check. Only dev-chains are allowed to do this!");
@@ -140,7 +156,8 @@ decl_module! {
                  // insert mrenclave if the ra_report represents one, otherwise insert default
                 <[u8; 32]>::decode(&mut ra_report.as_slice()).unwrap_or_default(),
                 <timestamp::Pallet<T>>::get().saturated_into(),
-                worker_url.clone()
+                worker_url.clone(),
+                SgxBuildMode::default()
             );
 
             Self::add_enclave(&sender, &enclave)?;
@@ -239,7 +256,9 @@ decl_error! {
         SenderIsNotAttestedEnclave,
         /// Verifying RA report failed
         RemoteAttestationVerificationFailed,
-        RemoteAttestationTooOld
+        RemoteAttestationTooOld,
+        ///The enclave cannot attest, because its building mode is not allowed
+        SgxModeNotAllowed
     }
 }
 

@@ -79,6 +79,7 @@ fn verify_ias_report_should_work() {
     assert_eq!(report.pubkey, TEST4_SIGNER_PUB);
     //assert_eq!(report.status, SgxStatus::GroupOutOfDate);
     assert_eq!(report.status, SgxStatus::ConfigurationNeeded);
+    assert_eq!(report.build_mode, SgxBuildMode::Debug);
 }
 
 #[test]
@@ -131,4 +132,13 @@ fn fix_incorrect_handling_of_iterator() {
     ];
 
     assert_err!(verify_ias_report(&report), "Invalid netscape payload");
+}
+
+#[test]
+fn verify_sgx_build_mode_works() {
+    //verify report from enclave in debug mode
+    let report = verify_ias_report(TEST4_CERT);
+    let report = report.unwrap();
+    assert_eq!(report.build_mode, SgxBuildMode::Debug);
+    //TODO assert report not in SGX_MODE HW debug.
 }

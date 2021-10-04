@@ -135,13 +135,38 @@ impl Config for Test {
 }
 
 // This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
+// our desired mockup. RA from enclave compiled in debug mode is allowed
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
     pallet_balances::GenesisConfig::<Test> {
         balances: vec![(AccountKeyring::Alice.to_account_id(), 1 << 60)],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
+    crate::GenesisConfig {
+        allow_sgx_debug_mode: true,
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
+    let mut ext: sp_io::TestExternalities = t.into();
+    ext.execute_with(|| System::set_block_number(1));
+    ext
+}
+
+//Build genesis storage for mockup, where RA from enclave compiled in debug mode is NOT allowed
+pub fn new_test_production_ext() -> sp_io::TestExternalities {
+    let mut t = system::GenesisConfig::default()
+        .build_storage::<Test>()
+        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances: vec![(AccountKeyring::Alice.to_account_id(), 1 << 60)],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
+    crate::GenesisConfig {
+        allow_sgx_debug_mode: false,
     }
     .assimilate_storage(&mut t)
     .unwrap();

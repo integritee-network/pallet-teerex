@@ -37,11 +37,18 @@ pub struct SgxReportData {
     d: [u8; SGX_REPORT_DATA_SIZE],
 }
 
+#[derive(Encode, Decode, Copy, Clone)]
+pub struct SGXAttributes {
+    flags: u64,
+    xfrm: u64,
+}
+
 // see Intel SGX SDK https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_report.h
 const SGX_REPORT_BODY_RESERVED1_BYTES: usize = 12;
 const SGX_REPORT_BODY_RESERVED2_BYTES: usize = 32;
 const SGX_REPORT_BODY_RESERVED3_BYTES: usize = 32;
 const SGX_REPORT_BODY_RESERVED4_BYTES: usize = 42;
+const SGX_FLAGS_DEBUG: u64 = 0x0000000000000002;
 
 #[derive(Encode, Decode, Copy, Clone)]
 pub struct SgxReportBody {
@@ -49,7 +56,7 @@ pub struct SgxReportBody {
     misc_select: [u8; 4], /* ( 16) Which fields defined in SSA.MISC */
     reserved1: [u8; SGX_REPORT_BODY_RESERVED1_BYTES], /* ( 20) */
     isv_ext_prod_id: [u8; 16], /* ( 32) ISV assigned Extended Product ID */
-    attributes: [u8; 16], /* ( 48) Any special Capabilities the Enclave possess */
+    attributes: SGXAttributes, /* ( 48) Any special Capabilities the Enclave possess */
     mr_enclave: [u8; 32], /* ( 64) The value of the enclave's ENCLAVE measurement */
     reserved2: [u8; SGX_REPORT_BODY_RESERVED2_BYTES], /* ( 96) */
     mr_signer: [u8; 32],  /* (128) The value of the enclave's SIGNER measurement */
@@ -63,6 +70,20 @@ pub struct SgxReportBody {
     report_data: SgxReportData, /* (320) Data provided by the user */
 }
 
+impl SgxReportBody {
+    pub fn sgx_build_mode(&self) -> SgxBuildMode {
+        #[cfg(test)]
+        println!(
+            "attributes flag : {}",
+            format!("{:x}", self.attributes.flags)
+        );
+        if self.attributes.flags & SGX_FLAGS_DEBUG == SGX_FLAGS_DEBUG {
+            SgxBuildMode::Debug
+        } else {
+            SgxBuildMode::Production
+        }
+    }
+}
 // see Intel SGX SDK https://github.com/intel/linux-sgx/blob/master/common/inc/sgx_quote.h
 #[derive(Encode, Decode, Copy, Clone)]
 pub struct SgxQuote {
@@ -76,6 +97,17 @@ pub struct SgxQuote {
     report_body: SgxReportBody, /* 48  */
                         //signature_len: u32,    /* 432 */
                         //signature: [u8; 64]    /* 436 */  //must be hard-coded for SCALE codec
+}
+
+#[derive(Encode, Decode, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
+pub enum SgxBuildMode {
+    Debug,
+    Production,
+}
+impl Default for SgxBuildMode {
+    fn default() -> Self {
+        SgxBuildMode::Production
+    }
 }
 
 #[derive(Encode, Decode, Copy, Clone, PartialEq, sp_core::RuntimeDebug)]
@@ -98,6 +130,7 @@ pub struct SgxReport {
     pub pubkey: [u8; 32],
     pub status: SgxStatus,
     pub timestamp: u64, // unix timestamp in milliseconds
+    pub build_mode: SgxBuildMode,
 }
 
 type SignatureAlgorithms = &'static [&'static webpki::SignatureAlgorithm];
@@ -266,6 +299,7 @@ fn parse_report(report_raw: &[u8]) -> Result<SgxReport, &'static str> {
             status: ra_status,
             pubkey: xt_signer_array,
             timestamp: ra_timestamp,
+            build_mode: sgx_quote.report_body.sgx_build_mode(),
         })
     } else {
         Err("Failed to parse isvEnclaveQuoteBody from attestation report")
