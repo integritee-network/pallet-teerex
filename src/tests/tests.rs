@@ -20,6 +20,7 @@ use crate::mock::*;
 use crate::test_utils::consts::*;
 use crate::{ConfirmedCalls, Enclave, EnclaveRegistry, Error, RawEvent, Request, ShardIdentifier};
 use frame_support::{assert_err, assert_ok, IterableStorageMap, StorageMap};
+use ias_verify::SgxBuildMode;
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 
@@ -70,20 +71,22 @@ fn list_enclaves_works() {
     new_test_ext().execute_with(|| {
         Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
-        let _e_1: Enclave<AccountId, Vec<u8>> = Enclave {
+        let e_1: Enclave<AccountId, Vec<u8>> = Enclave {
             pubkey: signer.clone(),
             mr_enclave: TEST4_MRENCLAVE,
             timestamp: TEST4_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
             TEST4_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 1);
         let enclaves = list_enclaves();
-        assert_eq!(enclaves[0].1.pubkey, signer)
+        assert_eq!(enclaves[0].1.pubkey, signer);
+        assert!(enclaves.contains(&(1, e_1.clone())));
     })
 }
 
@@ -103,6 +106,7 @@ fn remove_middle_enclave_works() {
             mr_enclave: TEST5_MRENCLAVE,
             timestamp: TEST5_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         let e_2: Enclave<AccountId, Vec<u8>> = Enclave {
@@ -110,6 +114,7 @@ fn remove_middle_enclave_works() {
             mr_enclave: TEST6_MRENCLAVE,
             timestamp: TEST6_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         let e_3: Enclave<AccountId, Vec<u8>> = Enclave {
@@ -117,12 +122,13 @@ fn remove_middle_enclave_works() {
             mr_enclave: TEST7_MRENCLAVE,
             timestamp: TEST7_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer5.clone()),
             TEST5_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 1);
         assert_eq!(list_enclaves(), vec![(1, e_1.clone())]);
@@ -131,7 +137,7 @@ fn remove_middle_enclave_works() {
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer6.clone()),
             TEST6_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 2);
         let enclaves = list_enclaves();
@@ -142,7 +148,7 @@ fn remove_middle_enclave_works() {
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer7.clone()),
             TEST7_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 3);
         let enclaves = list_enclaves();
@@ -190,7 +196,7 @@ fn register_enclave_with_almost_too_old_report_works() {
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer),
             TEST7_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
     })
 }
@@ -207,19 +213,20 @@ fn update_enclave_url_works() {
             mr_enclave: TEST4_MRENCLAVE,
             timestamp: TEST4_TIMESTAMP,
             url: url2.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
             TEST4_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave(1).url, URL.to_vec());
 
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
             TEST4_CERT.to_vec(),
-            url2.to_vec()
+            url2.to_vec(),
         ));
         assert_eq!(Teerex::enclave(1).url, url2.to_vec());
         let enclaves = list_enclaves();
@@ -240,7 +247,7 @@ fn update_ipfs_hash_works() {
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
             TEST4_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 1);
         assert_ok!(Teerex::confirm_call(
@@ -308,7 +315,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
             TEST4_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
 
         assert_ok!(Balances::transfer(
@@ -348,18 +355,12 @@ fn timestamp_callback_works() {
         let signer7 = get_signer(TEST7_SIGNER_PUB);
 
         // add enclave 1
-        let e_1: Enclave<AccountId, Vec<u8>> = Enclave {
-            pubkey: signer5.clone(),
-            mr_enclave: TEST5_MRENCLAVE,
-            timestamp: TEST5_TIMESTAMP,
-            url: URL.to_vec(),
-        };
-
         let e_2: Enclave<AccountId, Vec<u8>> = Enclave {
             pubkey: signer6.clone(),
             mr_enclave: TEST6_MRENCLAVE,
             timestamp: TEST6_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         let e_3: Enclave<AccountId, Vec<u8>> = Enclave {
@@ -367,23 +368,24 @@ fn timestamp_callback_works() {
             mr_enclave: TEST7_MRENCLAVE,
             timestamp: TEST7_TIMESTAMP,
             url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
         };
 
         //Register 3 enclaves: 5, 6 ,7
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer5.clone()),
             TEST5_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer6.clone()),
             TEST6_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer7.clone()),
             TEST7_CERT.to_vec(),
-            URL.to_vec()
+            URL.to_vec(),
         ));
         assert_eq!(Teerex::enclave_count(), 3);
 
@@ -416,5 +418,61 @@ fn timestamp_callback_works() {
         let expected_event = Event::Teerex(RawEvent::RemovedEnclave(signer7));
         assert!(System::events().iter().any(|a| a.event == expected_event));
         assert_eq!(Teerex::enclave_count(), 0);
+    })
+}
+
+#[test]
+fn debug_mode_enclave_attest_works_when_sgx_debug_mode_is_allowed() {
+    new_test_ext().execute_with(|| {
+        set_timestamp(TEST4_TIMESTAMP);
+        let signer4 = get_signer(TEST4_SIGNER_PUB);
+        let e_0: Enclave<AccountId, Vec<u8>> = Enclave {
+            pubkey: signer4.clone(),
+            mr_enclave: TEST4_MRENCLAVE,
+            timestamp: TEST4_TIMESTAMP,
+            url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Debug,
+        };
+
+        //Register an enclave compiled in debug mode
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer4.clone()),
+            TEST4_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+        assert_eq!(Teerex::enclave_count(), 1);
+        let enclaves = list_enclaves();
+        assert!(enclaves.contains(&(1, e_0.clone())));
+    })
+}
+
+#[test]
+fn production_mode_enclave_attest_works_when_sgx_debug_mode_is_allowed() {
+    new_test_ext().execute_with(|| {
+        //TODO test certificate from enclave compiled in production mode
+    })
+}
+
+#[test]
+fn debug_mode_enclave_attest_fails_when_sgx_debug_mode_not_allowed() {
+    new_test_production_ext().execute_with(|| {
+        set_timestamp(TEST4_TIMESTAMP);
+        let signer4 = get_signer(TEST4_SIGNER_PUB);
+        //Try to register an enclave compiled in debug mode
+        assert_err!(
+            Teerex::register_enclave(
+                Origin::signed(signer4.clone()),
+                TEST4_CERT.to_vec(),
+                URL.to_vec(),
+            ),
+            Error::<Test>::SgxModeNotAllowed
+        );
+        assert_eq!(Teerex::enclave_count(), 0);
+    })
+}
+#[test]
+fn production_mode_enclave_attest_works_when_sgx_debug_mode_not_allowed() {
+    new_test_production_ext().execute_with(|| {
+        //TODO
     })
 }
