@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-# This creates and extended weight file that contains:
+# This creates an extended weight file that contains:
 # * `WeightInfo` trait declaration
 # * `WeightInfo` implementation for an `IntegriteeRuntimeWeight` struct
 # * `WeightInfo` implementation for `()` used in testing.
