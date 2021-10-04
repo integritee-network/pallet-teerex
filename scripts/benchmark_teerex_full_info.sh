@@ -9,6 +9,7 @@ set -eo pipefail
 # The output file is intended to be used in the `pallet_teerex` internally for development only. It contains more
 # information than needed for the actual node.
 
+# use absolute paths to call this from wherever we want
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 PROJ_ROOT="$(dirname "$SCRIPTS_DIR")"
 TEEREX_SRC="$PROJ_ROOT/src"
@@ -17,12 +18,16 @@ echo "PROJ_ROOT:    $SCRIPTS_DIR"
 echo "SCRIPTS_DIR:  $PROJ_ROOT"
 echo "TEEREX_SRC:   $TEEREX_SRC"
 
-NODE_BINARY="../integritee-node/target/release/integritee-node"
-#CHAIN_SPEC=$
+NODE_BINARY=../integritee-node/target/release/integritee-node
+CHAIN_SPEC=${1:-integritee-mainnet}
+
+echo "Generating weights for pallet_teerex"
+#echo "node: $CHAIN_SPEC"
+echo "chain: $CHAIN_SPEC"
 
 $NODE_BINARY \
   benchmark \
-  --chain=integritee-mainnet \
+  --chain=${CHAIN_SPEC} \
   --steps=50 \
   --repeat=20 \
   --pallet=pallet_teerex \
