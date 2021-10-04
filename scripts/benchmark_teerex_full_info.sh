@@ -18,14 +18,14 @@ echo "PROJ_ROOT:    $SCRIPTS_DIR"
 echo "SCRIPTS_DIR:  $PROJ_ROOT"
 echo "TEEREX_SRC:   $TEEREX_SRC"
 
-NODE_BINARY=../integritee-node/target/release/integritee-node
-CHAIN_SPEC=${1:-integritee-mainnet}
+NODE_BINARY=${1:-"../integritee-node/target/release/integritee-node"}
+CHAIN_SPEC=${2:-integritee-mainnet}
 
 echo "Generating weights for pallet_teerex"
-#echo "node: $CHAIN_SPEC"
+echo "node: $NODE_BINARY"
 echo "chain: $CHAIN_SPEC"
 
-$NODE_BINARY \
+./"${NODE_BINARY}" \
   benchmark \
   --chain=${CHAIN_SPEC} \
   --steps=50 \
