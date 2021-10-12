@@ -192,6 +192,8 @@ decl_module! {
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
             "[Teerex]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(),
+            "[Teerex]: IPFS state update requested by enclave that doesn't match the shard");
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
@@ -207,6 +209,8 @@ decl_module! {
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
                 "[Teerex]: IPFS state update requested by enclave that is not registered");
             let sender_index = Self::enclave_index(&sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(),
+            "[Teerex]: IPFS state update requested by enclave that doesn't match the shard");
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
@@ -232,6 +236,10 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender),
             "[Teerex]: IPFS state update requested by enclave that is not registered");
+
+            let sender_index = <EnclaveIndex<T>>::get(sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == bonding_account.encode(),
+            "[Teerex]: IPFS state update requested by enclave that doesn't match the bonding accounts");
 
             if !<ConfirmedCalls>::contains_key(call_hash) {
                 log::info!("First confirmation for call: {:?}", call_hash);
