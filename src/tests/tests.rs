@@ -279,13 +279,15 @@ fn ipfs_update_from_unregistered_enclave_fails() {
     new_test_ext().execute_with(|| {
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
         let signer = get_signer(TEST4_SIGNER_PUB);
-        assert!(Teerex::confirm_call(
-            Origin::signed(signer),
-            H256::default(),
-            H256::default(),
-            ipfs_hash.as_bytes().to_vec()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::confirm_call(
+                Origin::signed(signer),
+                H256::default(),
+                H256::default(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::EnclaveIsNotRegistered
+        );
     })
 }
 
@@ -499,7 +501,7 @@ fn verify_unshield_funds_works() {
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             incognito_account.clone(),
             100,
-            bonding_account.clone(), //Bonding account (Eoc)
+            bonding_account.clone(),
         )
         .is_ok());
 
@@ -509,7 +511,7 @@ fn verify_unshield_funds_works() {
         assert!(System::events().iter().any(|a| a.event == expected_event));
 
         assert!(Teerex::unshield_funds(
-            Origin::signed(signer4.clone()), //Alice incognito account
+            Origin::signed(signer4.clone()),
             AccountKeyring::Alice.to_account_id(),
             50,
             bonding_account.clone(),
@@ -534,14 +536,16 @@ fn verify_unshield_funds_from_not_registered_enclave_fails() {
 
         assert_eq!(Teerex::enclave_count(), 0);
 
-        assert!(Teerex::unshield_funds(
-            Origin::signed(signer4.clone()),
-            AccountKeyring::Alice.to_account_id(),
-            51,
-            signer4.clone(),
-            call_hash.clone()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::unshield_funds(
+                Origin::signed(signer4.clone()),
+                AccountKeyring::Alice.to_account_id(),
+                51,
+                signer4.clone(),
+                call_hash.clone()
+            ),
+            Error::<Test>::EnclaveIsNotRegistered
+        );
     })
 }
 
@@ -567,7 +571,7 @@ fn verify_unshield_funds_from_enclave_not_bonding_account_fails() {
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             incognito_account.to_vec(),
             100,
-            bonding_account.clone(), //Bonding account (Eoc)
+            bonding_account.clone(),
         )
         .is_ok());
 
@@ -575,18 +579,20 @@ fn verify_unshield_funds_from_enclave_not_bonding_account_fails() {
             Origin::signed(AccountKeyring::Alice.to_account_id()),
             incognito_account.to_vec(),
             50,
-            not_bonding_account.clone(), //Bonding account (Eoc)
+            not_bonding_account.clone(),
         )
         .is_ok());
 
-        assert!(Teerex::unshield_funds(
-            Origin::signed(signer4.clone()), //Alice incognito account
-            AccountKeyring::Alice.to_account_id(),
-            50,
-            not_bonding_account.clone(),
-            call_hash.clone()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::unshield_funds(
+                Origin::signed(signer4.clone()),
+                AccountKeyring::Alice.to_account_id(),
+                50,
+                not_bonding_account.clone(),
+                call_hash.clone()
+            ),
+            Error::<Test>::BondingAccountNotMatchEnclave
+        );
 
         assert_eq!(Balances::free_balance(bonding_account.clone()), 100);
         assert_eq!(Balances::free_balance(not_bonding_account.clone()), 50);
@@ -609,13 +615,15 @@ fn verify_call_confirmation_from_shards_not_enclave_fails() {
             URL.to_vec(),
         ));
 
-        assert!(Teerex::confirm_call(
-            Origin::signed(signer7.clone()),
-            shard4.clone(),
-            request_hash.clone(),
-            ipfs_hash.as_bytes().to_vec()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::confirm_call(
+                Origin::signed(signer7.clone()),
+                shard4.clone(),
+                request_hash.clone(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::ShardNotMatchEnclave
+        );
     })
 }
 
@@ -672,12 +680,14 @@ fn verify_block_confirmation_from_shards_not_enclave_fails() {
         ));
         assert_eq!(Teerex::enclave_count(), 1);
 
-        assert!(Teerex::confirm_block(
-            Origin::signed(signer7.clone()),
-            shard4.clone(),
-            block_hash.clone(),
-            ipfs_hash.as_bytes().to_vec()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::confirm_block(
+                Origin::signed(signer7.clone()),
+                shard4.clone(),
+                block_hash.clone(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::ShardNotMatchEnclave
+        );
     })
 }
