@@ -21,28 +21,24 @@ version = '2.0.0'
 
 [dependencies.frame-support]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-version = "4.0.0-dev"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.10"
 
 [dependencies.sp-std]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-version = "4.0.0-dev"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.10"
 
 [dependencies.sp-io]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-version = "4.0.0-dev"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.10"
 #features = ["disable_panic_handler", "disable_oom"]
 
 [dependencies.sp-core]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
-branch = "master"
-version = "4.0.0-dev"
+git = "https://github.com/paritytech/substrate"
+branch = "polkadot-v0.9.10"
 
 [dependencies.webpki]
 git = 'https://github.com/scs/webpki-nostd.git'
