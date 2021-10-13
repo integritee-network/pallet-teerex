@@ -191,7 +191,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
             let sender_index = Self::enclave_index(&sender);
-            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(), <Error<T>>::ShardNotMatchEnclave);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(), <Error<T>>::WrongMrenclaveForShard);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
@@ -206,7 +206,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
             let sender_index = Self::enclave_index(&sender);
-            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(),<Error<T>>::ShardNotMatchEnclave);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(),<Error<T>>::WrongMrenclaveForShard);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
@@ -233,7 +233,7 @@ decl_module! {
             ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
 
             let sender_index = <EnclaveIndex<T>>::get(sender);
-            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == bonding_account.encode(),<Error<T>>::BondingAccountNotMatchEnclave);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == bonding_account.encode(),<Error<T>>::WrongMrenclaveForBondingAccount);
 
             if !<ConfirmedCalls>::contains_key(call_hash) {
                 log::info!("First confirmation for call: {:?}", call_hash);
@@ -264,15 +264,15 @@ decl_error! {
         ///The enclave is not registered
         EnclaveIsNotRegistered,
         ///The bonding account doesn't match the enclave
-        BondingAccountNotMatchEnclave,
+        WrongMrenclaveForBondingAccount,
         ///The shard doesn't match the enclave
-        ShardNotMatchEnclave,
+        WrongMrenclaveForShard,
         ///The worker url is too long
         EnclaveUrlTooLong,
         ///The RA report is too long
         RaReportTooLong,
         ///The enclave doesn't exists
-        EnclaveDoesntExist,
+        InexistentEnclave,
     }
 }
 
@@ -300,7 +300,7 @@ impl<T: Config> Module<T> {
     fn remove_enclave(sender: &T::AccountId) -> DispatchResult {
         ensure!(
             <EnclaveIndex<T>>::contains_key(sender),
-            <Error<T>>::EnclaveDoesntExist
+            <Error<T>>::InexistentEnclave
         );
         let index_to_remove = <EnclaveIndex<T>>::take(sender);
 

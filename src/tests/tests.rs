@@ -591,7 +591,7 @@ fn verify_unshield_funds_from_enclave_not_bonding_account_fails() {
                 not_bonding_account.clone(),
                 call_hash.clone()
             ),
-            Error::<Test>::BondingAccountNotMatchEnclave
+            Error::<Test>::WrongMrenclaveForBondingAccount
         );
 
         assert_eq!(Balances::free_balance(bonding_account.clone()), 100);
@@ -622,7 +622,7 @@ fn verify_call_confirmation_from_shards_not_enclave_fails() {
                 request_hash.clone(),
                 ipfs_hash.as_bytes().to_vec()
             ),
-            Error::<Test>::ShardNotMatchEnclave
+            Error::<Test>::WrongMrenclaveForShard
         );
     })
 }
@@ -687,7 +687,7 @@ fn verify_block_confirmation_from_shards_not_enclave_fails() {
                 block_hash.clone(),
                 ipfs_hash.as_bytes().to_vec()
             ),
-            Error::<Test>::ShardNotMatchEnclave
+            Error::<Test>::WrongMrenclaveForShard
         );
     })
 }
