@@ -10,6 +10,7 @@ const TEST4_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST4.der");
 const TEST5_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST5.der");
 const TEST6_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST6.der");
 const TEST7_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST7.der");
+const TEST8_CERT: &[u8] = include_bytes!("../test/ra_dump_cert_TEST8_PRODUCTION.der");
 
 const TEST1_SIGNER_ATTN: &[u8] =
     include_bytes!("../test/test_ra_signer_attn_MRSIGNER1_MRENCLAVE1.bin");
@@ -56,6 +57,11 @@ const TEST6_MRENCLAVE: [u8; 32] =
 // equal to TEST6!
 const TEST7_MRENCLAVE: [u8; 32] =
     hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
+
+// production mode
+// MRSIGNER is 117f95f65f06afb5764b572156b8b525c6230db7d6b1c94e8ebdb7fba068f4e8
+const TEST8_MRENCLAVE: [u8; 32] =
+    hex!("bcf66abfc6b3ef259e9ecfe4cf8df667a7f5a546525dee16822741b38f6e6050");
 
 // unix epoch. must be later than this
 const TEST1_TIMESTAMP: i64 = 1580587262i64;
