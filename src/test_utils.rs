@@ -97,6 +97,8 @@ pub mod consts {
     pub const TEST5_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST5.der");
     pub const TEST6_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST6.der");
     pub const TEST7_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST7.der");
+    pub const TEST8_CERT: &[u8] =
+        include_bytes!("../ias-verify/test/ra_dump_cert_TEST8_PRODUCTION.der");
 
     // reproduce with integritee-service signing-key
     pub const TEST4_SIGNER_PUB: &[u8; 32] =
@@ -108,6 +110,8 @@ pub mod consts {
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST6.bin");
     pub const TEST7_SIGNER_PUB: &[u8; 32] =
         include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST7.bin");
+    pub const TEST8_SIGNER_PUB: &[u8; 32] =
+        include_bytes!("../ias-verify/test/enclave-signing-pubkey-TEST8-PRODUCTION.bin");
 
     // reproduce with "make mrenclave" in worker repo root
     // MRSIGNER is always 83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
@@ -119,12 +123,17 @@ pub mod consts {
         hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
     pub const TEST7_MRENCLAVE: [u8; 32] =
         hex!("f4dedfc9e5fcc48443332bc9b23161c34a3c3f5a692eaffdb228db27b704d9d1");
+    // production mode
+    // MRSIGNER is 117f95f65f06afb5764b572156b8b525c6230db7d6b1c94e8ebdb7fba068f4e8
+    pub const TEST8_MRENCLAVE: [u8; 32] =
+        hex!("bcf66abfc6b3ef259e9ecfe4cf8df667a7f5a546525dee16822741b38f6e6050");
 
     // unix epoch. must be later than this
     pub const TEST4_TIMESTAMP: u64 = 1587899785000;
     pub const TEST5_TIMESTAMP: u64 = 1587900013000;
     pub const TEST6_TIMESTAMP: u64 = 1587900233000;
     pub const TEST7_TIMESTAMP: u64 = 1587900450000;
+    pub const TEST8_TIMESTAMP: u64 = 1634156700000;
 
     pub const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24 * 1000;
 

@@ -449,7 +449,27 @@ fn debug_mode_enclave_attest_works_when_sgx_debug_mode_is_allowed() {
 #[test]
 fn production_mode_enclave_attest_works_when_sgx_debug_mode_is_allowed() {
     new_test_ext().execute_with(|| {
-        //TODO test certificate from enclave compiled in production mode
+        new_test_ext().execute_with(|| {
+            set_timestamp(TEST8_TIMESTAMP);
+            let signer8 = get_signer(TEST8_SIGNER_PUB);
+            let e_0: Enclave<AccountId, Vec<u8>> = Enclave {
+                pubkey: signer8.clone(),
+                mr_enclave: TEST8_MRENCLAVE,
+                timestamp: TEST8_TIMESTAMP,
+                url: URL.to_vec(),
+                sgx_mode: SgxBuildMode::Production,
+            };
+
+            //Register an enclave compiled in production mode
+            assert_ok!(Teerex::register_enclave(
+                Origin::signed(signer8.clone()),
+                TEST8_CERT.to_vec(),
+                URL.to_vec(),
+            ));
+            assert_eq!(Teerex::enclave_count(), 1);
+            let enclaves = list_enclaves();
+            assert!(enclaves.contains(&(1, e_0.clone())));
+        })
     })
 }
 
@@ -473,6 +493,24 @@ fn debug_mode_enclave_attest_fails_when_sgx_debug_mode_not_allowed() {
 #[test]
 fn production_mode_enclave_attest_works_when_sgx_debug_mode_not_allowed() {
     new_test_production_ext().execute_with(|| {
-        //TODO
+        set_timestamp(TEST8_TIMESTAMP);
+        let signer8 = get_signer(TEST8_SIGNER_PUB);
+        let e_0: Enclave<AccountId, Vec<u8>> = Enclave {
+            pubkey: signer8.clone(),
+            mr_enclave: TEST8_MRENCLAVE,
+            timestamp: TEST8_TIMESTAMP,
+            url: URL.to_vec(),
+            sgx_mode: SgxBuildMode::Production,
+        };
+
+        //Register an enclave compiled in production mode
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer8.clone()),
+            TEST8_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+        assert_eq!(Teerex::enclave_count(), 1);
+        let enclaves = list_enclaves();
+        assert!(enclaves.contains(&(1, e_0.clone())));
     })
 }

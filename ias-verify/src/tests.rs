@@ -146,5 +146,8 @@ fn verify_sgx_build_mode_works() {
     let report = verify_ias_report(TEST4_CERT);
     let report = report.unwrap();
     assert_eq!(report.build_mode, SgxBuildMode::Debug);
-    //TODO assert report not in SGX_MODE HW debug.
+    //verify report from enclave in production mode
+    let report = verify_ias_report(TEST8_CERT);
+    let report = report.unwrap();
+    assert_eq!(report.build_mode, SgxBuildMode::Production);
 }
