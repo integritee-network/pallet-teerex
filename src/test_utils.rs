@@ -92,6 +92,11 @@ pub mod ias {
 pub mod consts {
     use hex_literal::hex;
 
+    pub const INCOGNITO_ACCOUNT: [u8; 32] = [
+        44, 106, 196, 170, 141, 51, 4, 200, 143, 12, 167, 255, 252, 221, 15, 119, 228, 141, 94, 2,
+        132, 145, 21, 17, 52, 41, 40, 220, 157, 130, 48, 176,
+    ];
+
     // reproduce with "integritee_service dump_ra"
     pub const TEST4_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST4.der");
     pub const TEST5_CERT: &[u8] = include_bytes!("../ias-verify/test/ra_dump_cert_TEST5.der");

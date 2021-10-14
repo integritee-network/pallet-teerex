@@ -42,7 +42,13 @@ fn generate_accounts<T: Config>(amount: u32) -> Vec<T::AccountId> {
 
 fn add_enclaves_to_registry<T: Config>(accounts: &[T::AccountId]) {
     for a in accounts.iter() {
-        Teerex::<T>::add_enclave(a, &Enclave::default().with_pubkey(a.clone())).unwrap()
+        Teerex::<T>::add_enclave(
+            a,
+            &Enclave::default()
+                .with_pubkey(a.clone())
+                .with_mr_enclave(TEST4_SETUP.mrenclave),
+        )
+        .unwrap()
     }
 }
 
@@ -106,7 +112,7 @@ benchmarks! {
     // execution time is constant irrespective of cyphertext size.
     call_worker {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
-        let req = Request { shard: Default::default(), cyphertext: vec![1u8; 2000]};
+        let req = Request { shard:H256::from_slice(&TEST4_SETUP.mrenclave), cyphertext: vec![1u8; 2000]};
     }: _(RawOrigin::Signed(accounts[0].clone()), req)
 
     // Benchmark `confirm_call` with the worst possible conditions:
@@ -115,7 +121,7 @@ benchmarks! {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
         add_enclaves_to_registry::<T>(&accounts);
 
-        let shard: ShardIdentifier = [1; 32].into();
+        let shard: ShardIdentifier = H256::from_slice(&TEST4_SETUP.mrenclave);
         let block_hash: H256 = [2; 32].into();
         let ipfs_hash: Vec<u8> = [3; 32].to_vec();
 
@@ -130,7 +136,7 @@ benchmarks! {
         let accounts: Vec<T::AccountId> = generate_accounts::<T>(1);
         add_enclaves_to_registry::<T>(&accounts);
 
-        let shard: ShardIdentifier = [1; 32].into();
+        let shard: ShardIdentifier = H256::from_slice(&TEST4_SETUP.mrenclave);
         let block_hash: H256 = [2; 32].into();
         let ipfs_hash: Vec<u8> = [3; 32].to_vec();
 
