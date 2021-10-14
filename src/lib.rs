@@ -133,8 +133,8 @@ decl_module! {
         pub fn register_enclave(origin, ra_report: Vec<u8>, worker_url: Vec<u8>) -> DispatchResult {
             log::info!("teerex: called into runtime call register_enclave()");
             let sender = ensure_signed(origin)?;
-            ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, "RA report too long");
-            ensure!(worker_url.len() <= MAX_URL_LEN, "URL too long");
+            ensure!(ra_report.len() <= MAX_RA_REPORT_LEN, <Error<T>>::RaReportTooLong);
+            ensure!(worker_url.len() <= MAX_URL_LEN,  <Error<T>>::EnclaveUrlTooLong);
             log::info!("teerex: parameter lenght ok");
 
             #[cfg(not(feature = "skip-ias-check"))]
@@ -189,9 +189,9 @@ decl_module! {
         #[weight = (<T as Config>::WeightInfo::confirm_call(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_call(origin, shard: ShardIdentifier, call_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-            "[Teerex]: IPFS state update requested by enclave that is not registered");
+            ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
             let sender_index = Self::enclave_index(&sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(), <Error<T>>::WrongMrenclaveForShard);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("call confirmed with shard {:?}, call hash {:?}, ipfs_hash {:?}", shard, call_hash, ipfs_hash);
@@ -204,9 +204,9 @@ decl_module! {
         #[weight = (<T as Config>::WeightInfo::confirm_block(), DispatchClass::Normal, Pays::Yes)]
         pub fn confirm_block(origin, shard: ShardIdentifier, block_hash: H256, ipfs_hash: Vec<u8>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-                "[Teerex]: IPFS state update requested by enclave that is not registered");
+            ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
             let sender_index = Self::enclave_index(&sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == shard.encode(),<Error<T>>::WrongMrenclaveForShard);
             <LatestIpfsHash>::insert(shard, ipfs_hash.clone());
             <WorkerForShard>::insert(shard, sender_index);
             log::debug!("block confirmed with shard {:?}, block hash {:?}, ipfs_hash {:?}", shard, block_hash, ipfs_hash);
@@ -230,8 +230,10 @@ decl_module! {
         #[weight = (1000, DispatchClass::Normal, Pays::No)]
         pub fn unshield_funds(origin, public_account: T::AccountId, amount: BalanceOf<T>, bonding_account: T::AccountId, call_hash: H256) -> DispatchResult {
             let sender = ensure_signed(origin)?;
-            ensure!(<EnclaveIndex<T>>::contains_key(&sender),
-            "[Teerex]: IPFS state update requested by enclave that is not registered");
+            ensure!(<EnclaveIndex<T>>::contains_key(&sender), <Error<T>>::EnclaveIsNotRegistered);
+
+            let sender_index = <EnclaveIndex<T>>::get(sender);
+            ensure!(<EnclaveRegistry::<T>>::get(sender_index).mr_enclave.encode() == bonding_account.encode(),<Error<T>>::WrongMrenclaveForBondingAccount);
 
             if !<ConfirmedCalls>::contains_key(call_hash) {
                 log::info!("First confirmation for call: {:?}", call_hash);
@@ -258,7 +260,19 @@ decl_error! {
         RemoteAttestationVerificationFailed,
         RemoteAttestationTooOld,
         ///The enclave cannot attest, because its building mode is not allowed
-        SgxModeNotAllowed
+        SgxModeNotAllowed,
+        ///The enclave is not registered
+        EnclaveIsNotRegistered,
+        ///The bonding account doesn't match the enclave
+        WrongMrenclaveForBondingAccount,
+        ///The shard doesn't match the enclave
+        WrongMrenclaveForShard,
+        ///The worker url is too long
+        EnclaveUrlTooLong,
+        ///The RA report is too long
+        RaReportTooLong,
+        ///The enclave doesn't exists
+        InexistentEnclave,
     }
 }
 
@@ -286,7 +300,7 @@ impl<T: Config> Module<T> {
     fn remove_enclave(sender: &T::AccountId) -> DispatchResult {
         ensure!(
             <EnclaveIndex<T>>::contains_key(sender),
-            "[Teerex]: Trying to remove an enclave that doesn't exist."
+            <Error<T>>::InexistentEnclave
         );
         let index_to_remove = <EnclaveIndex<T>>::take(sender);
 

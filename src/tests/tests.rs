@@ -240,7 +240,7 @@ fn update_ipfs_hash_works() {
         Timestamp::set_timestamp(TEST4_TIMESTAMP);
 
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
-        let shard = H256::default();
+        let shard = H256::from_slice(&TEST4_MRENCLAVE);
         let request_hash = H256::default();
         let signer = get_signer(TEST4_SIGNER_PUB);
 
@@ -279,13 +279,15 @@ fn ipfs_update_from_unregistered_enclave_fails() {
     new_test_ext().execute_with(|| {
         let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
         let signer = get_signer(TEST4_SIGNER_PUB);
-        assert!(Teerex::confirm_call(
-            Origin::signed(signer),
-            H256::default(),
-            H256::default(),
-            ipfs_hash.as_bytes().to_vec()
-        )
-        .is_err());
+        assert_err!(
+            Teerex::confirm_call(
+                Origin::signed(signer),
+                H256::default(),
+                H256::default(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::EnclaveIsNotRegistered
+        );
     })
 }
 
@@ -311,6 +313,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
         Timestamp::set_timestamp(TEST4_TIMESTAMP);
         let signer = get_signer(TEST4_SIGNER_PUB);
         let call_hash: H256 = H256::from([1u8; 32]);
+        let bonding_account = get_signer(&TEST4_MRENCLAVE);
 
         assert_ok!(Teerex::register_enclave(
             Origin::signed(signer.clone()),
@@ -320,7 +323,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
 
         assert_ok!(Balances::transfer(
             Origin::signed(AccountKeyring::Alice.to_account_id()),
-            signer.clone(),
+            bonding_account.clone(),
             1 << 50
         ));
 
@@ -328,7 +331,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
             Origin::signed(signer.clone()),
             AccountKeyring::Alice.to_account_id(),
             50,
-            signer.clone(),
+            bonding_account.clone(),
             call_hash.clone()
         )
         .is_ok());
@@ -337,7 +340,7 @@ fn unshield_is_only_executed_once_for_the_same_call_hash() {
             Origin::signed(signer.clone()),
             AccountKeyring::Alice.to_account_id(),
             50,
-            signer,
+            bonding_account.clone(),
             call_hash.clone()
         )
         .is_ok());
@@ -474,5 +477,217 @@ fn debug_mode_enclave_attest_fails_when_sgx_debug_mode_not_allowed() {
 fn production_mode_enclave_attest_works_when_sgx_debug_mode_not_allowed() {
     new_test_production_ext().execute_with(|| {
         //TODO
+    })
+}
+
+#[test]
+fn verify_unshield_funds_works() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
+        let signer4 = get_signer(TEST4_SIGNER_PUB);
+        let call_hash: H256 = H256::from([1u8; 32]);
+        let bonding_account = get_signer(&TEST4_MRENCLAVE);
+        let incognito_account = INCOGNITO_ACCOUNT.to_vec();
+
+        //Register enclave
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer4.clone()),
+            TEST4_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+        assert_eq!(Teerex::enclave_count(), 1);
+
+        assert!(Teerex::shield_funds(
+            Origin::signed(AccountKeyring::Alice.to_account_id()),
+            incognito_account.clone(),
+            100,
+            bonding_account.clone(),
+        )
+        .is_ok());
+
+        assert_eq!(Balances::free_balance(bonding_account.clone()), 100);
+
+        let expected_event = Event::Teerex(RawEvent::ShieldFunds(incognito_account));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+
+        assert!(Teerex::unshield_funds(
+            Origin::signed(signer4.clone()),
+            AccountKeyring::Alice.to_account_id(),
+            50,
+            bonding_account.clone(),
+            call_hash.clone()
+        )
+        .is_ok());
+        assert_eq!(Balances::free_balance(bonding_account), 50);
+
+        let expected_event = Event::Teerex(RawEvent::UnshieldedFunds(
+            AccountKeyring::Alice.to_account_id(),
+        ));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+    })
+}
+
+#[test]
+fn verify_unshield_funds_from_not_registered_enclave_fails() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST4_TIMESTAMP);
+        let signer4 = get_signer(TEST4_SIGNER_PUB);
+        let call_hash: H256 = H256::from([1u8; 32]);
+
+        assert_eq!(Teerex::enclave_count(), 0);
+
+        assert_err!(
+            Teerex::unshield_funds(
+                Origin::signed(signer4.clone()),
+                AccountKeyring::Alice.to_account_id(),
+                51,
+                signer4.clone(),
+                call_hash.clone()
+            ),
+            Error::<Test>::EnclaveIsNotRegistered
+        );
+    })
+}
+
+#[test]
+fn verify_unshield_funds_from_enclave_not_bonding_account_fails() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        let signer4 = get_signer(TEST4_SIGNER_PUB);
+        let call_hash: H256 = H256::from([1u8; 32]);
+        let bonding_account = get_signer(&TEST4_MRENCLAVE);
+        let incognito_account = INCOGNITO_ACCOUNT;
+        let not_bonding_account = get_signer(&TEST7_MRENCLAVE);
+
+        //Ensure that enclave is registered
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer4.clone()),
+            TEST4_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+
+        //Ensure that bonding account has funds
+        assert!(Teerex::shield_funds(
+            Origin::signed(AccountKeyring::Alice.to_account_id()),
+            incognito_account.to_vec(),
+            100,
+            bonding_account.clone(),
+        )
+        .is_ok());
+
+        assert!(Teerex::shield_funds(
+            Origin::signed(AccountKeyring::Alice.to_account_id()),
+            incognito_account.to_vec(),
+            50,
+            not_bonding_account.clone(),
+        )
+        .is_ok());
+
+        assert_err!(
+            Teerex::unshield_funds(
+                Origin::signed(signer4.clone()),
+                AccountKeyring::Alice.to_account_id(),
+                50,
+                not_bonding_account.clone(),
+                call_hash.clone()
+            ),
+            Error::<Test>::WrongMrenclaveForBondingAccount
+        );
+
+        assert_eq!(Balances::free_balance(bonding_account.clone()), 100);
+        assert_eq!(Balances::free_balance(not_bonding_account.clone()), 50);
+    })
+}
+
+#[test]
+fn verify_call_confirmation_from_shards_not_enclave_fails() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
+        let request_hash = H256::default();
+        let signer7 = get_signer(TEST7_SIGNER_PUB);
+        let shard4 = H256::from_slice(&TEST4_MRENCLAVE);
+
+        //Ensure that enclave is registered
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer7.clone()),
+            TEST7_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+
+        assert_err!(
+            Teerex::confirm_call(
+                Origin::signed(signer7.clone()),
+                shard4.clone(),
+                request_hash.clone(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::WrongMrenclaveForShard
+        );
+    })
+}
+
+#[test]
+fn update_block_confirmation_works() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
+        let block_hash = H256::default();
+        let signer7 = get_signer(TEST7_SIGNER_PUB);
+        let shard7 = H256::from_slice(&TEST7_MRENCLAVE);
+
+        //Ensure that enclave is registered
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer7.clone()),
+            TEST7_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+        assert_eq!(Teerex::enclave_count(), 1);
+
+        assert_ok!(Teerex::confirm_block(
+            Origin::signed(signer7.clone()),
+            shard7.clone(),
+            block_hash.clone(),
+            ipfs_hash.as_bytes().to_vec()
+        ));
+
+        let expected_event = Event::Teerex(RawEvent::UpdatedIpfsHash(
+            shard7.clone(),
+            1,
+            ipfs_hash.as_bytes().to_vec(),
+        ));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+
+        let expected_event = Event::Teerex(RawEvent::BlockConfirmed(signer7.clone(), block_hash));
+        assert!(System::events().iter().any(|a| a.event == expected_event));
+    })
+}
+
+#[test]
+fn verify_block_confirmation_from_shards_not_enclave_fails() {
+    new_test_ext().execute_with(|| {
+        Timestamp::set_timestamp(TEST7_TIMESTAMP);
+        let ipfs_hash = "QmYY9U7sQzBYe79tVfiMyJ4prEJoJRWCD8t85j9qjssS9y";
+        let block_hash = H256::default();
+        let signer7 = get_signer(TEST7_SIGNER_PUB);
+        let shard4 = H256::from_slice(&TEST4_MRENCLAVE);
+
+        //Ensure that enclave is registered
+        assert_ok!(Teerex::register_enclave(
+            Origin::signed(signer7.clone()),
+            TEST7_CERT.to_vec(),
+            URL.to_vec(),
+        ));
+        assert_eq!(Teerex::enclave_count(), 1);
+
+        assert_err!(
+            Teerex::confirm_block(
+                Origin::signed(signer7.clone()),
+                shard4.clone(),
+                block_hash.clone(),
+                ipfs_hash.as_bytes().to_vec()
+            ),
+            Error::<Test>::WrongMrenclaveForShard
+        );
     })
 }
